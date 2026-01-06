@@ -443,7 +443,7 @@ const SettingsModal = ({ onClose, onClear, onDelete, settings, setSettings, them
         <div>
           <h3 className={`text-[11px] font-black uppercase tracking-widest ${themeConfig.sub} mb-4`}>Data Management</h3>
           <div className="flex justify-center w-full">
-            <button onClick={onClear} className="px-3 py-1.5 bg-red-500/10 text-red-500 border border-red-500/50 rounded-lg text-xs font-black uppercase hover:bg-red-500 hover:text-white transition-colors">Clear All Data</button>
+            <button onClick={onClear} className="w-full p-4 rounded-xl bg-red-500/10 text-red-500 border border-red-500/50 text-xs font-black uppercase hover:bg-red-500 hover:text-white transition-colors">Clear All Data</button>
           </div>
         </div>
         <div>
@@ -662,7 +662,7 @@ export default function App() {
           visData = {h, a};
           resultNode = (
             <>
-              <Slider label="Height" value={h} onChange={setH} min={1} max={48} suffix='"' settings={settings}/>
+              <Slider label="Height" value={h} onChange={setH} min={1} max={30} suffix='"' settings={settings}/>
               <div className="flex justify-between items-end mb-1.5 px-1">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">Angle</label>
                 <div className="flex items-center gap-2">
@@ -682,7 +682,7 @@ export default function App() {
           visData = {h, a}; 
           resultNode = ( 
             <> 
-              <Slider label="Obstacle" value={h} onChange={setH} min={1} max={12} suffix='"' settings={settings}/> 
+              <Slider label="Obstacle" value={h} onChange={setH} min={1} max={30} suffix='"' settings={settings}/> 
               <div className="flex justify-between items-end mb-1.5 px-1">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">Angle</label> 
                 <div className="flex items-center gap-2"> 
@@ -702,7 +702,7 @@ export default function App() {
           visData = {h, w, a}; 
           resultNode = ( 
             <> 
-              <Slider label="Height" value={h} onChange={setH} min={1} max={12} suffix='"' settings={settings}/> 
+              <Slider label="Height" value={h} onChange={setH} min={1} max={30} suffix='"' settings={settings}/> 
               <Slider label="Width" value={w} onChange={setW} min={1} max={48} suffix='"' settings={settings}/> 
               <div className="flex justify-between items-end mb-1.5 px-1"> 
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">Angle</label> 
@@ -727,7 +727,7 @@ export default function App() {
           const stagger = s * Math.tan(toRad(a/2)); 
           // Shrinkage for Concentric: S * tan(θ/2) - same as stagger formula
           visData = {s, a, numPipes}; 
-          resultNode = (<><Slider label="Space" value={s} onChange={setS} min={0.5} max={4} step={0.5} suffix='"' settings={settings}/><Slider label="Pipes" value={numPipes} onChange={setNumPipes} min={2} max={8} settings={settings}/><Slider label="Angle" value={a} onChange={setA} min={5} max={90} suffix="°" settings={settings}/><Result label="Stagger Δ" value={format(stagger)} unit='"' highlight theme={theme} settings={settings}/><Result label="Shrinkage" value={format(stagger)} unit='"' theme={theme} settings={settings} isShrinkage={true}/></>);
+          resultNode = (<><Slider label="Space" value={s} onChange={setS} min={0.5} max={4} step={0.5} suffix='"' settings={settings}/><Slider label="Pipes" value={numPipes} onChange={setNumPipes} min={2} max={8} settings={settings}/><Slider label="Angle" value={a} onChange={setA} min={5} max={90} suffix="°" settings={settings}/><Result label="Shrinkage" value={format(stagger)} unit='"' theme={theme} settings={settings} isShrinkage={true}/></>);
         } else if (bendType === 'segmented') { 
           const sdev = (Math.PI * r * a) / 180; 
           // Shrinkage for Segment: Arc - Chord where Arc = (π * R * θ) / 180 and Chord = 2 * R * sin(θ/2)
@@ -894,8 +894,9 @@ export default function App() {
         {renderContent()} 
         <div className="w-full mt-8 flex justify-center gap-6 pb-4"> 
           <button className={`text-[10px] font-bold ${themeConfig.sub} hover:${themeConfig.text} transition-colors`}>Imprint</button> 
-          <button className={`text-[10px] font-bold ${themeConfig.sub} hover:${themeConfig.text} transition-colors`}>Privacy Policy</button> 
-        </div> 
+          <button className={`text-[10px] font-bold ${themeConfig.sub} hover:${themeConfig.text} transition-colors`}>Privacy Policy</button>
+          <button className={`text-[10px] font-bold ${themeConfig.sub} hover:${themeConfig.text} transition-colors`}>Log Out</button> 
+        </div>
       </div> 
       {isLevelActive && ( 
         <LevelModal targetAngle={bendType === 'segmented' ? (a / n) : a} onClose={() => setIsLevelActive(false)} themeConfig={themeConfig} theme={theme} /> 
@@ -912,7 +913,7 @@ export default function App() {
           </button> 
         ))} 
       </div> 
-      <div className={`fixed bottom-28 left-1/2 -translate-x-1/2 ${themeConfig.card} border px-6 py-3 rounded-full shadow-2xl transition-all duration-500 z-50 backdrop-blur-md flex items-center gap-3 ${toast.s ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}><ShieldCheck size={16} className={themeConfig.accent}/><span className="text-[10px] font-black uppercase tracking-widest text-white">{toast.m}</span></div> 
+      <div className={`fixed bottom-28 left-1/2 -translate-x-1/2 ${themeConfig.card} border px-6 py-3 rounded-full shadow-2xl transition-all duration-500 z-50 backdrop-blur-md flex items-center gap-3 ${toast.s ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}><ShieldCheck size={16} className={themeConfig.accent}/><span className={`text-[10px] font-black uppercase tracking-widest ${theme === 'light' ? 'text-black' : 'text-white'}`}>{toast.m}</span></div> 
     </div> 
   ); 
 }
