@@ -101,8 +101,8 @@ const getSuggestedAngle = (h, currentSize) => {
   return 60;
 };
 
-const Result = ({ label, value, unit="", highlight=false, theme, settings }) => (
-  <div className={`text-sm ${highlight ? 'text-blue-600 font-bold' : theme === 'light' ? 'text-slate-600' : 'text-slate-400'} flex justify-between`}>
+const Result = ({ label, value, unit="", highlight=false, theme, settings, isShrinkage=false }) => (
+  <div className={`text-sm ${isShrinkage ? 'text-orange-500 font-bold' : highlight ? 'text-blue-600 font-bold' : theme === 'light' ? 'text-slate-600' : 'text-slate-400'} flex justify-between`}>
     {label} <span className="font-mono font-black">{value}{unit}</span>
   </div>
 );
@@ -112,7 +112,7 @@ const Slider = ({ label, value, onChange, min, max, step=1, suffix="", settings 
       <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">{label}</label>
       <span className="text-sm text-blue-500 font-mono font-bold leading-none">{value}{suffix}</span>
     </div>
-    <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(e.target.value)} className={`w-full ${settings.largeTargets ? 'h-4' : 'h-1.5'} bg-slate-800 rounded-full appearance-none accent-blue-600 cursor-pointer shadow-inner`} />
+    <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(parseFloat(e.target.value))} className={`w-full ${settings.largeTargets ? 'h-4' : 'h-1.5'} bg-slate-800 rounded-full appearance-none accent-blue-600 cursor-pointer shadow-inner`} />
   </div>
 );
 const WarningBox = ({ warnings, theme }) => { 
@@ -329,9 +329,9 @@ const Visualizer = ({ type, data, isForExport = false, theme = 'dark' }) => {
     }
   }, [type, data, theme]);
   
-  // Updated height to h-80 (large visualizer), set bg-white for conduitFill in light mode
+  // Updated height to h-80 (large visualizer), set bg-white for all visualization fields in light mode
   // Using preserveAspectRatio to ensure centering
-  const bgClass = (theme === 'light' && type === 'conduitFill') ? 'bg-white border border-slate-200' : 'bg-slate-900/50';
+  const bgClass = theme === 'light' ? 'bg-white border border-slate-200' : 'bg-slate-900/50';
   
   return (
     <svg viewBox={geometry.vb.join(' ')} preserveAspectRatio="xMidYMid meet" className={`w-full h-80 rounded-2xl ${bgClass}`}>
@@ -414,7 +414,7 @@ const LevelModal = ({ targetAngle, onClose, themeConfig, theme }) => {
 const SettingsModal = ({ onClose, onClear, onDelete, settings, setSettings, themeConfig, theme }) => { 
   const isLight = theme === 'light';
   return (
-    <div className={`fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 p-6`}>
+    <div className={`fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-[100] p-6`}>
       <div className={`${themeConfig.card} p-8 rounded-3xl w-full max-w-sm shadow-2xl space-y-8`}>
         <div className="flex justify-between items-center">
           <h2 className={`text-lg font-black uppercase tracking-widest ${themeConfig.text}`}>Settings</h2>
@@ -447,7 +447,7 @@ const SettingsModal = ({ onClose, onClear, onDelete, settings, setSettings, them
           </div>
         </div>
         <div>
-          <h3 className={`text-[11px] font-black uppercase tracking-widest text-red-500 mb-4`}>Danger Zone</h3>
+          <h3 className={`text-[11px] font-black uppercase tracking-widest text-red-500 mb-4`}>Account Management</h3>
           <button onClick={onDelete} className="w-full p-4 rounded-xl bg-red-500 text-white font-black uppercase tracking-widest text-xs hover:bg-red-600 transition-colors"> Delete My Account </button>
           <p className={`text-[10px] ${themeConfig.sub} mt-2 text-center`}>Permanently delete your account and all data.</p>
         </div>
@@ -483,7 +483,7 @@ export default function App() {
   const [n, setN] = useState(10);
   const [offsetR, setOffsetR] = useState(10); 
   const [offsetO, setOffsetO] = useState(10); 
-  const [s, setS] = useState(2);
+  const [s, setS] = useState(2.0);
   const [numPipes, setNumPipes] = useState(3);
   const [ct, setCt] = useState("EMT"); 
   const [cs, setCs] = useState("0.75"); 
@@ -588,7 +588,7 @@ export default function App() {
   }, [h, a]);
   const resetTab = useCallback(() => {
     if (activeTab === 'bending') {
-      setH(10); setA(30); setW(10); setR(24); setN(10); setOffsetR(10); setOffsetO(10); setS(2); setNumPipes(3);
+      setH(10); setA(30); setW(10); setR(24); setN(10); setOffsetR(10); setOffsetO(10); setS(2.0); setNumPipes(3);
       setAutoAngle(true);
     } else if (activeTab === 'cFill') {
       setCt("EMT"); setCs("0.75"); setWires([{ s: '12', c: 3 }]);
@@ -672,16 +672,18 @@ export default function App() {
               </div>
               <input type="range" min={10} max={90} step={1} value={a} onChange={(e) => handleManualAngle(e.target.value)} className={`w-full ${settings.largeTargets ? 'h-4' : 'h-1.5'} bg-slate-800 rounded-full appearance-none accent-blue-600 cursor-pointer shadow-inner mb-4`} />
               <Result label="Travel" value={format(travel)} unit='"' highlight theme={theme} settings={settings}/>
-              <Result label="Shrink" value={format(shrink)} unit='"' theme={theme} settings={settings}/>
+              <Result label="Shrinkage" value={format(shrink)} unit='"' theme={theme} settings={settings} isShrinkage={true}/>
             </>
           ); 
         } else if (bendType === 'saddle3') { 
           const radS = toRad(a/2); const s3dist = h / Math.sin(radS); 
+          // Shrinkage for 3-Point Saddle: h * (csc(θ) - cot(θ)) where θ is the side angle (a/2)
+          const shrinkage3 = h * (1/Math.sin(radS) - Math.cos(radS)/Math.sin(radS));
           visData = {h, a}; 
           resultNode = ( 
             <> 
               <Slider label="Obstacle" value={h} onChange={setH} min={1} max={12} suffix='"' settings={settings}/> 
-              <div className="flex justify-between items-end mb-1.5 px-1"> 
+              <div className="flex justify-between items-end mb-1.5 px-1">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">Angle</label> 
                 <div className="flex items-center gap-2"> 
                   <button onClick={() => setAutoAngle(!autoAngle)} className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full transition-colors ${autoAngle ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-400'}`}> <Wand2 size={10} className="inline mr-1" />{autoAngle ? "Auto" : "Manual"}</button> 
@@ -689,11 +691,14 @@ export default function App() {
                 </div> 
               </div> 
               <input type="range" min={10} max={90} step={1} value={a} onChange={(e) => handleManualAngle(e.target.value)} className={`w-full ${settings.largeTargets ? 'h-4' : 'h-1.5'} bg-slate-800 rounded-full appearance-none accent-blue-600 cursor-pointer shadow-inner mb-4`} /> 
-              <Result label="Center to Side" value={format(s3dist)} unit='"' highlight theme={theme} settings={settings}/> 
+              <Result label="Center to Side" value={format(s3dist)} unit='"' highlight theme={theme} settings={settings}/>
+              <Result label="Shrinkage" value={format(shrinkage3)} unit='"' theme={theme} settings={settings} isShrinkage={true}/>
             </> 
-          ); 
+          );
         } else if (bendType === 'saddle4') { 
           const s4rad = toRad(a); const s4travel = h / Math.sin(s4rad); 
+          // Shrinkage for 4-Point Saddle: 2 * [h * (csc(θ) - cot(θ))]
+          const shrinkage4 = 2 * h * (1/Math.sin(s4rad) - Math.cos(s4rad)/Math.sin(s4rad));
           visData = {h, w, a}; 
           resultNode = ( 
             <> 
@@ -707,21 +712,30 @@ export default function App() {
                 </div> 
               </div> 
               <input type="range" min={5} max={60} step={1} value={a} onChange={(e) => handleManualAngle(e.target.value)} className={`w-full ${settings.largeTargets ? 'h-4' : 'h-1.5'} bg-slate-800 rounded-full appearance-none accent-blue-600 cursor-pointer shadow-inner mb-4`} /> 
-              <Result label="Travel" value={format(s4travel)} unit='"' highlight theme={theme} settings={settings}/> 
+              <Result label="Travel" value={format(s4travel)} unit='"' highlight theme={theme} settings={settings}/>
+              <Result label="Shrinkage" value={format(shrinkage4)} unit='"' theme={theme} settings={settings} isShrinkage={true}/>
             </> 
-          ); 
+          );
         } else if (bendType === 'roll') { 
           const trueO = Math.sqrt(offsetR*offsetR + offsetO*offsetO); const rollTravel = trueO / Math.sin(toRad(a)); 
+          // Shrinkage for Rolling Offset: H * (csc(θ) - cot(θ)) where H = true offset
+          const radRoll = toRad(a);
+          const shrinkageRoll = trueO * (1/Math.sin(radRoll) - Math.cos(radRoll)/Math.sin(radRoll));
           visData = {r: offsetR, o: offsetO, a}; 
-          resultNode = (<><Slider label="Rise" value={offsetR} onChange={setOffsetR} min={1} max={48} suffix='"' settings={settings}/><Slider label="Roll" value={offsetO} onChange={setOffsetO} min={1} max={48} suffix='"' settings={settings}/><Slider label="Angle" value={a} onChange={setA} min={5} max={90} suffix="°" settings={settings}/><Result label="Travel" value={format(rollTravel)} unit='"' highlight theme={theme} settings={settings}/></>); 
+          resultNode = (<><Slider label="Rise" value={offsetR} onChange={setOffsetR} min={1} max={48} suffix='"' settings={settings}/><Slider label="Roll" value={offsetO} onChange={setOffsetO} min={1} max={48} suffix='"' settings={settings}/><Slider label="Angle" value={a} onChange={setA} min={5} max={90} suffix="°" settings={settings}/><Result label="Travel" value={format(rollTravel)} unit='"' highlight theme={theme} settings={settings}/><Result label="Shrinkage" value={format(shrinkageRoll)} unit='"' theme={theme} settings={settings} isShrinkage={true}/></>);
         } else if (bendType === 'parallel') { 
           const stagger = s * Math.tan(toRad(a/2)); 
+          // Shrinkage for Concentric: S * tan(θ/2) - same as stagger formula
           visData = {s, a, numPipes}; 
-          resultNode = (<><Slider label="Spacing" value={s} onChange={setS} min={1} max={12} suffix='"' settings={settings}/><Slider label="Pipes" value={numPipes} onChange={setNumPipes} min={2} max={8} settings={settings}/><Slider label="Angle" value={a} onChange={setA} min={5} max={90} suffix="°" settings={settings}/><Result label="Stagger Δ" value={format(stagger)} unit='"' highlight theme={theme} settings={settings}/></>); 
+          resultNode = (<><Slider label="Space" value={s} onChange={setS} min={0.5} max={4} step={0.5} suffix='"' settings={settings}/><Slider label="Pipes" value={numPipes} onChange={setNumPipes} min={2} max={8} settings={settings}/><Slider label="Angle" value={a} onChange={setA} min={5} max={90} suffix="°" settings={settings}/><Result label="Stagger Δ" value={format(stagger)} unit='"' highlight theme={theme} settings={settings}/><Result label="Shrinkage" value={format(stagger)} unit='"' theme={theme} settings={settings} isShrinkage={true}/></>);
         } else if (bendType === 'segmented') { 
           const sdev = (Math.PI * r * a) / 180; 
+          // Shrinkage for Segment: Arc - Chord where Arc = (π * R * θ) / 180 and Chord = 2 * R * sin(θ/2)
+          const arcLength = (Math.PI * r * a) / 180;
+          const chordLength = 2 * r * Math.sin(toRad(a) / 2);
+          const shrinkageSeg = arcLength - chordLength;
           visData = {r, a, n}; 
-          resultNode = (<><Slider label={`Shots (à ${format(a / n)}°)`} value={n} onChange={setN} min={2} max={40} settings={settings}/><Slider label="Radius" value={r} onChange={setR} min={10} max={120} suffix='"' settings={settings}/><Slider label="Angle" value={a} onChange={setA} min={1} max={180} suffix="°" settings={settings}/><Result label="Developed Length" value={format(sdev)} unit='"' highlight theme={theme} settings={settings}/><Result label="Shot Detail" value={`${n} shots à ${format(a / n)}°`} theme={theme} settings={settings}/></>); 
+          resultNode = (<><Slider label={`Shots (à ${format(a / n)}°)`} value={n} onChange={setN} min={2} max={40} settings={settings}/><Slider label="Radius" value={r} onChange={setR} min={10} max={120} suffix='"' settings={settings}/><Slider label="Angle" value={a} onChange={setA} min={1} max={180} suffix="°" settings={settings}/><Result label="Developed Length" value={format(sdev)} unit='"' highlight theme={theme} settings={settings}/><Result label="Shot Detail" value={`${n} shots à ${format(a / n)}°`} theme={theme} settings={settings}/><Result label="Shrinkage" value={format(shrinkageSeg)} unit='"' theme={theme} settings={settings} isShrinkage={true}/></>);
         } 
         const warnings = getBendWarnings(bendType); 
         return ( 
@@ -874,8 +888,7 @@ export default function App() {
           <button onClick={() => setTheme(theme==='dark'?'light':theme==='light'?'construction':'dark')} className={`w-9 h-9 ${themeConfig.card} border rounded-xl flex items-center justify-center shadow-lg active:scale-90 transition-transform`}> 
             {theme==='dark' ? <Sun size={18} className="text-yellow-400" /> : theme==='light' ? <HardHat size={18} className="text-yellow-500" /> : <Moon size={18} className="text-blue-400" />} 
           </button> 
-          <div className={`w-9 h-9 ${themeConfig.accentBg} rounded-xl flex items-center justify-center shadow-blue-900/40`}><Zap size={18} className="text-white" fill="currentColor"/></div> 
-        </div> 
+        </div>
       </div> 
       <div className="max-w-md w-full relative"> 
         {renderContent()} 
