@@ -1,12 +1,38 @@
 // BendIQ - Professional Conduit Bending Calculator
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { z } from 'zod';
 import {
   Compass, RefreshCw, AlertCircle, ShieldCheck, Move, CornerDownRight, Save,
   FolderInput, Trash2, Package, Download, X, Pencil, FileText, Loader2, 
   Sun, Moon, HardHat, Plus, RotateCcw, CheckCircle2, AlertTriangle, Settings, 
   Mic, Type, MousePointerClick, Flashlight, Share2, LogOut
 } from 'lucide-react';
+
+// Schema for validating project data from localStorage
+const projectDataSchema = z.object({
+  h: z.number().optional(),
+  a: z.number().min(0).max(90).optional(),
+  w: z.number().optional(),
+  r: z.number().optional(),
+  n: z.number().optional(),
+  offsetR: z.number().optional(),
+  offsetO: z.number().optional(),
+  s: z.number().optional(),
+  numPipes: z.number().optional(),
+  bendType: z.string().optional(),
+  mat: z.string().optional(),
+});
+
+const projectSchema = z.object({
+  id: z.number(),
+  t: z.string().max(200),
+  d: z.string().max(500),
+  dt: z.string(),
+  data: projectDataSchema,
+});
+
+const projectsArraySchema = z.array(projectSchema);
 
 const WIRE_DATA: any = {
   "THHN": { 
@@ -472,12 +498,20 @@ export default function Index() {
   const [bendSize, setBendSize] = useState("0.75");
   const [autoAngle, setAutoAngle] = useState(true);
 
-  // Load projects from localStorage with user ID
+  // Load projects from localStorage with user ID (validated)
   useEffect(() => {
     if (user) {
       const savedProjects = localStorage.getItem(`bendiq_projects_${user.uid}`);
       if (savedProjects) {
-        setProjs(JSON.parse(savedProjects));
+        try {
+          const parsed = JSON.parse(savedProjects);
+          const validated = projectsArraySchema.parse(parsed);
+          setProjs(validated);
+        } catch (error) {
+          console.error('Invalid project data in localStorage, clearing:', error);
+          localStorage.removeItem(`bendiq_projects_${user.uid}`);
+          setProjs([]);
+        }
       }
     }
   }, [user]);
@@ -635,15 +669,23 @@ export default function Index() {
   };
 
   const loadProject = (proj: any) => {
-    const d = proj.data;
-    if (d.h !== undefined) setH(d.h);
-    if (d.a !== undefined) setA(d.a);
-    if (d.w !== undefined) setW(d.w);
-    if (d.bendType !== undefined) setBendType(d.bendType);
-    if (d.mat !== undefined) setMat(d.mat);
-    setActiveTab('bending');
-    setToast({ s: true, m: "Project Loaded" });
-    setTimeout(() => setToast({ s: false, m: "" }), 2000);
+    try {
+      // Validate project data before loading
+      const validatedProject = projectSchema.parse(proj);
+      const d = validatedProject.data;
+      if (d.h !== undefined) setH(d.h);
+      if (d.a !== undefined) setA(Math.min(90, Math.max(0, d.a))); // Clamp angle
+      if (d.w !== undefined) setW(d.w);
+      if (d.bendType !== undefined) setBendType(d.bendType);
+      if (d.mat !== undefined) setMat(d.mat);
+      setActiveTab('bending');
+      setToast({ s: true, m: "Project Loaded" });
+      setTimeout(() => setToast({ s: false, m: "" }), 2000);
+    } catch (error) {
+      console.error('Invalid project data:', error);
+      setToast({ s: true, m: "Invalid Project Data" });
+      setTimeout(() => setToast({ s: false, m: "" }), 2000);
+    }
   };
 
   const handleClearData = () => {
