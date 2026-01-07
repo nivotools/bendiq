@@ -1,54 +1,58 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { 
-  signInWithEmailAndPassword, 
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
-  signInWithPopup
-} from 'firebase/auth';
-import { auth } from '@/lib/firebase';
-import { Loader2, Mail, Lock, Chrome } from 'lucide-react';
-import { z } from 'zod';
+  signInWithPopup,
+} from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { Loader2, Mail, Lock, Chrome } from "lucide-react";
+import { z } from "zod";
 
-const emailSchema = z.string().trim().email('Invalid email address');
-const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
+// Zod schemas for validation
+const emailSchema = z.string().trim().email("Invalid email address");
+const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
+  // Form State
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // Helper to map Firebase error codes to user-friendly messages
   const getErrorMessage = (code: string) => {
     switch (code) {
-      case 'auth/user-not-found':
-        return 'No account found with this email';
-      case 'auth/wrong-password':
-        return 'Incorrect password';
-      case 'auth/email-already-in-use':
-        return 'An account already exists with this email';
-      case 'auth/weak-password':
-        return 'Password should be at least 6 characters';
-      case 'auth/invalid-email':
-        return 'Invalid email address';
-      case 'auth/too-many-requests':
-        return 'Too many attempts. Please try again later';
-      case 'auth/popup-closed-by-user':
-        return 'Sign-in popup was closed';
-      case 'auth/invalid-credential':
-        return 'Invalid email or password';
+      case "auth/user-not-found":
+        return "No account found with this email";
+      case "auth/wrong-password":
+        return "Incorrect password";
+      case "auth/email-already-in-use":
+        return "An account already exists with this email";
+      case "auth/weak-password":
+        return "Password should be at least 6 characters";
+      case "auth/invalid-email":
+        return "Invalid email address";
+      case "auth/too-many-requests":
+        return "Too many attempts. Please try again later";
+      case "auth/popup-closed-by-user":
+        return "Sign-in popup was closed";
+      case "auth/invalid-credential":
+        return "Invalid email or password";
       default:
-        return 'An error occurred. Please try again';
+        return "An error occurred. Please try again";
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    
-    // Validate inputs
+    setError("");
+
+    // Validate inputs using Zod
     const emailResult = emailSchema.safeParse(email);
     if (!emailResult.success) {
       setError(emailResult.error.errors[0].message);
@@ -69,8 +73,9 @@ const Login: React.FC = () => {
       } else {
         await createUserWithEmailAndPassword(auth, email, password);
       }
-      navigate('/');
+      navigate("/");
     } catch (err: any) {
+      console.error(err);
       setError(getErrorMessage(err.code));
     } finally {
       setLoading(false);
@@ -78,14 +83,15 @@ const Login: React.FC = () => {
   };
 
   const handleGoogleSignIn = async () => {
-    setError('');
+    setError("");
     setLoading(true);
-    
+
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
-      navigate('/');
+      navigate("/");
     } catch (err: any) {
+      console.error(err);
       setError(getErrorMessage(err.code));
     } finally {
       setLoading(false);
@@ -108,13 +114,14 @@ const Login: React.FC = () => {
         {/* Auth Card */}
         <div className="bg-slate-900 border border-white/5 rounded-3xl p-6 shadow-2xl">
           <h2 className="text-white text-lg font-black mb-6 text-center">
-            {isLogin ? 'Welcome Back' : 'Create Account'}
+            {isLogin ? "Welcome Back" : "Create Account"}
           </h2>
 
           {/* Google Sign In */}
           <button
             onClick={handleGoogleSignIn}
             disabled={loading}
+            type="button"
             className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-100 text-slate-900 font-bold py-3 px-4 rounded-xl transition-all active:scale-98 disabled:opacity-50 mb-4"
           >
             <Chrome size={20} />
@@ -163,20 +170,22 @@ const Login: React.FC = () => {
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition-all active:scale-98 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {loading && <Loader2 size={18} className="animate-spin" />}
-              {isLogin ? 'Sign In' : 'Create Account'}
+              {isLogin ? "Sign In" : "Create Account"}
             </button>
           </form>
 
           {/* Toggle Login/Signup */}
           <div className="mt-6 text-center">
             <button
-              onClick={() => { setIsLogin(!isLogin); setError(''); }}
+              type="button"
+              onClick={() => {
+                setIsLogin(!isLogin);
+                setError("");
+              }}
               className="text-slate-400 text-sm hover:text-white transition-colors"
             >
               {isLogin ? "Don't have an account? " : "Already have an account? "}
-              <span className="text-blue-500 font-bold">
-                {isLogin ? 'Sign Up' : 'Sign In'}
-              </span>
+              <span className="text-blue-500 font-bold">{isLogin ? "Sign Up" : "Sign In"}</span>
             </button>
           </div>
         </div>
