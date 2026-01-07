@@ -1,5 +1,5 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth, browserLocalPersistence, setPersistence } from 'firebase/auth';
+import { initializeApp, FirebaseApp } from 'firebase/app';
+import { getAuth, browserLocalPersistence, setPersistence, Auth } from 'firebase/auth';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -10,10 +10,17 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
+let app: FirebaseApp | null = null;
+let auth: Auth | null = null;
+let firebaseError: string | null = null;
 
-// Set persistence to LOCAL (survives browser restarts)
-setPersistence(auth, browserLocalPersistence);
+try {
+  app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  setPersistence(auth, browserLocalPersistence);
+} catch (error: any) {
+  firebaseError = error?.message || 'Failed to initialize Firebase';
+}
 
+export { auth, firebaseError };
 export default app;
