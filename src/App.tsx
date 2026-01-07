@@ -5,7 +5,7 @@ import {
   AlertCircle, ShieldCheck, Move, CornerDownRight, Save,
   FolderInput, Trash2, Package, Download, X, Zap,
   FileText, Loader2, Sun, Moon, HardHat, Plus, RotateCcw,
-  Gauge, CheckCircle2, Wand2, AlertTriangle, Settings, Mic, Type, MousePointerClick, Flashlight
+  Scale, CheckCircle2, Wand2, AlertTriangle, Settings, Mic, Type, MousePointerClick, Flashlight, Share2
 } from 'lucide-react';
 
 // Type declarations for external libraries and APIs
@@ -174,20 +174,32 @@ const Visualizer = ({ type, data, isForExport = false, theme = 'dark' }) => {
       case 'offset': {
         const h = getVal(data.h, 10), a = Math.max(1, getVal(data.a, 30));
         const run = h / Math.tan(toRad(a));
-        const pts = [{x:0,y:0}, {x:25,y:0}, {x:25+run,y:h}, {x:60+run,y:h}];
-        return { pts, marks: [{...pts[1], l:"1"}, {...pts[2], l:"2"}], dims: <Dim x1={25} y1={0} x2={25+run} y2={0} label={`D: ${format(run)}"`} />, obstacle: {x: 25+run+5, y: 0, w: 30, h: h * 0.75}, vb: calcBounds(pts, 90) };
+        const pipeThickness = 5;
+        const pts = [{x:0,y:pipeThickness/2}, {x:25,y:pipeThickness/2}, {x:25+run,y:h+pipeThickness/2}, {x:60+run,y:h+pipeThickness/2}];
+        // Obstacle: rectangle under the upper run representing floor/surface difference
+        const obstacle = {x: 25+run-5, y: 0, w: 40, h: h};
+        return { pts, marks: [{...pts[1], l:"1"}, {...pts[2], l:"2"}], dims: <Dim x1={25} y1={0} x2={25+run} y2={0} label={`D: ${format(run)}"`} />, obstacle, vb: calcBounds(pts, 90) };
       }
       case 'saddle3': {
-        const h = getVal(data.h, 5), a = getVal(data.a, 45);
+        const h = getVal(data.h, 20), a = getVal(data.a, 45);
         const run = h / Math.tan(toRad(a/2));
-        const pts = [{x:-run-35,y:0}, {x:-run,y:0}, {x:0,y:h}, {x:run,y:0}, {x:run+35,y:0}];
-        return { pts, marks: [{...pts[1], l:"S"}, {...pts[2], l:"C"}, {...pts[3], l:"S"}], dims: <Dim x1={-run} y1={0} x2={run} y2={0} label={`Span: ${format(run*2)}"`} />, obstacle: {x: -run*0.6, y: 0, w: run*1.2, h: h * 0.6}, vb: calcBounds(pts, 90) };
+        const pipeThickness = 5;
+        // Conduit path: apex at y = h + pipeThickness/2 so pipe touches top of obstacle
+        const pts = [{x:-run-35,y:pipeThickness/2}, {x:-run,y:pipeThickness/2}, {x:0,y:h+pipeThickness/2}, {x:run,y:pipeThickness/2}, {x:run+35,y:pipeThickness/2}];
+        // Obstacle: centered rectangle, height = obstacle height, fixed width 30px
+        const obstacleWidth = 30;
+        const obstacle = {x: -obstacleWidth/2, y: 0, w: obstacleWidth, h: h};
+        return { pts, marks: [{...pts[1], l:"S"}, {...pts[2], l:"C"}, {...pts[3], l:"S"}], dims: <Dim x1={-run} y1={0} x2={run} y2={0} label={`Span: ${format(run*2)}"`} />, obstacle, vb: calcBounds(pts, 90) };
       }
       case 'saddle4': {
-        const h = getVal(data.h, 5), w = getVal(data.w, 10), a = getVal(data.a, 30);
+        const h = getVal(data.h, 20), w = getVal(data.w, 25), a = getVal(data.a, 45);
         const run = h / Math.tan(toRad(a));
-        const pts = [{x:0,y:0}, {x:20,y:0}, {x:20+run,y:h}, {x:20+run+w,y:h}, {x:20+run+w+run,y:0}, {x:40+run+w+run,y:0}];
-        return { pts, marks: [{...pts[1], l:"1"},{...pts[2], l:"2"},{...pts[3], l:"3"},{...pts[4], l:"4"}], dims: <Dim x1={20+run} y1={h+15} x2={20+run+w} y2={h+15} label={`W: ${w}"`} />, obstacle: {x: 20+run+3, y: 0, w: w-6, h: h * 0.7}, vb: calcBounds(pts, 90) };
+        const pipeThickness = 5;
+        // Conduit path: flat bridge at y = h + pipeThickness/2 so pipe runs parallel above obstacle
+        const pts = [{x:0,y:pipeThickness/2}, {x:20,y:pipeThickness/2}, {x:20+run,y:h+pipeThickness/2}, {x:20+run+w,y:h+pipeThickness/2}, {x:20+run+w+run,y:pipeThickness/2}, {x:40+run+w+run,y:pipeThickness/2}];
+        // Obstacle: centered rectangle with height = h and width = w
+        const obstacle = {x: 20+run, y: 0, w: w, h: h};
+        return { pts, marks: [{...pts[1], l:"1"},{...pts[2], l:"2"},{...pts[3], l:"3"},{...pts[4], l:"4"}], dims: <Dim x1={20+run} y1={h+15} x2={20+run+w} y2={h+15} label={`W: ${w}"`} />, obstacle, vb: calcBounds(pts, 90) };
       }
       case 'roll': {
         const r = getVal(data.r, 10), o = getVal(data.o, 10);
@@ -337,7 +349,18 @@ const Visualizer = ({ type, data, isForExport = false, theme = 'dark' }) => {
     <svg viewBox={geometry.vb.join(' ')} preserveAspectRatio="xMidYMid meet" className={`w-full h-80 rounded-2xl ${bgClass}`}>
       {geometry.custom || (
         <g>
-          <rect x={geometry.obstacle?.x} y={-geometry.obstacle?.y} width={geometry.obstacle?.w} height={-geometry.obstacle?.h} fill="rgba(100,100,100,0.2)" rx="5" />
+          {/* Obstacle rendered behind (first) with semi-transparent grey #E5E7EB */}
+          {geometry.obstacle && (
+            <rect 
+              x={geometry.obstacle.x} 
+              y={-(geometry.obstacle.y + geometry.obstacle.h)} 
+              width={geometry.obstacle.w} 
+              height={geometry.obstacle.h} 
+              fill="#E5E7EB" 
+              fillOpacity="0.6" 
+              rx="3" 
+            />
+          )}
           <path d={getRoundedPath(geometry.pts)} fill="none" stroke={theme === 'construction' ? '#facc15' : '#2563eb'} strokeWidth="5" strokeLinecap="round" />
           {geometry.marks?.map((m,i) => (
             <g key={i}>
@@ -393,7 +416,7 @@ const LevelModal = ({ targetAngle, onClose, themeConfig, theme }) => {
         </div>
         {permission !== 'granted' ? (
           <div className="text-center">
-            <Gauge size={48} className={`mx-auto ${isLight ? 'text-blue-600' : 'text-blue-500'} mb-6 opacity-40`} />
+            <Scale size={48} className={`mx-auto ${isLight ? 'text-blue-600' : 'text-blue-500'} mb-6 opacity-40`} />
             <h3 className={`font-black text-lg mb-2 ${themeConfig.text}`}>Sensor Access Required</h3> 
             <p className={`${isLight ? 'text-slate-600' : 'text-slate-400'} text-xs mb-8 leading-relaxed`}>Please enable device orientation to use the phone as a digital level on the conduit.</p> 
             <button onClick={requestPermission} className={`w-full py-4 ${themeConfig.accentBg} text-white rounded-2xl font-black uppercase tracking-widest active:scale-95 transition-transform`}>Enable Level</button>
@@ -478,12 +501,12 @@ export default function App() {
   const [h, setH] = useState(10); 
   const [a, setA] = useState(30); 
   const [mat, setMat] = useState("EMT");
-  const [w, setW] = useState(10); 
-  const [r, setR] = useState(24); 
-  const [n, setN] = useState(10);
+  const [w, setW] = useState(25); 
+  const [r, setR] = useState(100); 
+  const [n, setN] = useState(15);
   const [offsetR, setOffsetR] = useState(10); 
   const [offsetO, setOffsetO] = useState(10); 
-  const [s, setS] = useState(2.0);
+  const [s, setS] = useState(1);
   const [numPipes, setNumPipes] = useState(3);
   const [ct, setCt] = useState("EMT"); 
   const [cs, setCs] = useState("0.75"); 
@@ -586,9 +609,56 @@ export default function App() {
     }
     return warnings;
   }, [h, a]);
+  // Share functionality
+  const handleShare = async (title: string, text: string) => {
+    const shareData = { title, text, url: window.location.href };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(`${title}\n${text}\n${window.location.href}`);
+        setToast({ s: true, m: "Copied to Clipboard" });
+        setTimeout(() => setToast({ s: false, m: "" }), 2000);
+      }
+    } catch (err) {
+      console.error('Share failed:', err);
+    }
+  };
+  const getShareText = () => {
+    if (activeTab === 'bending') {
+      if (bendType === 'offset') {
+        const travel = h / Math.sin(toRad(a));
+        return `Offset Bend: Height ${h}", Angle ${a}°, Travel ${format(travel)}"`;
+      } else if (bendType === 'saddle3') {
+        const s3dist = h / Math.sin(toRad(a/2));
+        return `3-Point Saddle: Obstacle ${h}", Angle ${a}°, Center to Side ${format(s3dist)}"`;
+      } else if (bendType === 'saddle4') {
+        const s4travel = h / Math.sin(toRad(a));
+        return `4-Point Saddle: Height ${h}", Width ${w}", Angle ${a}°, Travel ${format(s4travel)}"`;
+      } else if (bendType === 'roll') {
+        const trueO = Math.sqrt(offsetR*offsetR + offsetO*offsetO);
+        return `Rolling Offset: Rise ${offsetR}", Roll ${offsetO}", True Offset ${format(trueO)}"`;
+      } else if (bendType === 'parallel') {
+        const stagger = s * Math.tan(toRad(a/2));
+        return `Concentric: Spacing ${s}", ${numPipes} Pipes, Angle ${a}°, Shrinkage ${format(stagger)}"`;
+      } else if (bendType === 'segmented') {
+        const sdev = (Math.PI * r * a) / 180;
+        return `Segment Bend: ${n} Shots, Radius ${r}", Angle ${a}°, Dev Length ${format(sdev)}"`;
+      }
+    } else if (activeTab === 'cFill') {
+      const totalArea = wires.reduce((acc, w) => acc + (WIRE_DATA.THHN[w.s]?.area || 0) * w.c, 0);
+      const capArea = CONDUIT_DATA[ct][cs].area;
+      const fillPct = (totalArea / capArea) * 100;
+      return `Conduit Fill: ${ct} ${cs}", Fill ${format(fillPct)}%`;
+    } else if (activeTab === 'bFill') {
+      const boxUsed = (w14 * 2) + (w12 * 2.25) + (dev * 4.5);
+      return `Box Fill: ${BOX_DATA[selBox].label}, Used ${format(boxUsed)} in³`;
+    }
+    return 'BendIQ Calculation';
+  };
   const resetTab = useCallback(() => {
     if (activeTab === 'bending') {
-      setH(10); setA(30); setW(10); setR(24); setN(10); setOffsetR(10); setOffsetO(10); setS(2.0); setNumPipes(3);
+      setH(10); setA(30); setW(25); setR(100); setN(15); setOffsetR(10); setOffsetO(10); setS(1); setNumPipes(3);
       setAutoAngle(true);
     } else if (activeTab === 'cFill') {
       setCt("EMT"); setCs("0.75"); setWires([{ s: '12', c: 3 }]);
@@ -745,9 +815,9 @@ export default function App() {
                 <h2 className={`text-[11px] font-black uppercase tracking-widest ${themeConfig.accent}`}>Bending Lab</h2> 
               </div> 
               <div className="flex items-center gap-2"> 
-                <button onClick={resetTab} className={`p-2.5 ${themeConfig.card} rounded-full active:rotate-180 transition-transform duration-500 shadow-sm`}><RotateCcw size={16}/></button>
-                <button onClick={() => setIsLevelActive(true)} className={`p-2.5 ${themeConfig.card} rounded-full active:scale-90 shadow-sm`}><Gauge size={16}/></button> 
-                <button onClick={() => saveProject(bendType.toUpperCase(), `H:${h}" A:${a}°`)} className={`p-2.5 ${themeConfig.accentBg} text-white rounded-full active:scale-90 transition-transform shadow-lg`}><Save size={16}/></button> 
+              <button onClick={resetTab} className={`p-2.5 ${themeConfig.card} rounded-full active:rotate-180 transition-transform duration-500 shadow-sm`}><RotateCcw size={16}/></button>
+                <button onClick={() => setIsLevelActive(true)} className={`p-2.5 ${themeConfig.card} rounded-full active:scale-90 shadow-sm`}><Scale size={16}/></button> 
+                <button onClick={() => saveProject(bendType.toUpperCase(), `H:${h}" A:${a}°`)} className={`p-2.5 ${themeConfig.accentBg} text-white rounded-full active:scale-90 transition-transform shadow-lg`}><Save size={16}/></button>
               </div> 
             </div> 
             <div className="relative mb-4"> 
@@ -781,7 +851,13 @@ export default function App() {
                   <div key={i} className={`p-2 rounded-xl text-center border ${themeConfig.inset}`}><div className={`text-[9px] ${themeConfig.sub} font-bold mb-1`}>{x.d}</div><div className={`text-xs ${themeConfig.accent} font-black`}>{x.m}</div></div> 
                 ))} 
               </div> 
-            </div> 
+            </div>
+            <div className="mt-4 flex justify-center">
+              <button onClick={() => handleShare('BendIQ Calculation', getShareText())} className={`flex items-center gap-2 px-4 py-2 ${themeConfig.card} rounded-full shadow-md active:scale-95 transition-transform`}>
+                <Share2 size={14} className={themeConfig.accent} />
+                <span className={`text-[10px] font-black uppercase tracking-widest ${themeConfig.sub}`}>Share</span>
+              </button>
+            </div>
           </div> 
         ); 
       case 'cFill': 
@@ -795,9 +871,9 @@ export default function App() {
                 <h2 className={`text-[11px] font-black uppercase tracking-widest ${themeConfig.accent}`}>Conduit Load</h2> 
               </div> 
               <div className="flex items-center gap-2"> 
-                <button onClick={resetTab} className={`p-2.5 ${themeConfig.card} rounded-full active:rotate-180 transition-transform duration-500 shadow-sm`}><RotateCcw size={16}/></button> 
-                <button onClick={() => setIsLevelActive(true)} className={`p-2.5 ${themeConfig.card} rounded-full active:scale-90 shadow-sm`}><Gauge size={16}/></button> 
-                <button onClick={() => saveProject("FILL", `${ct} ${cs}"`)} className={`p-2.5 ${themeConfig.accentBg} text-white rounded-full active:scale-90 transition-transform shadow-lg`}><Save size={16}/></button> 
+              <button onClick={resetTab} className={`p-2.5 ${themeConfig.card} rounded-full active:rotate-180 transition-transform duration-500 shadow-sm`}><RotateCcw size={16}/></button> 
+                <button onClick={() => setIsLevelActive(true)} className={`p-2.5 ${themeConfig.card} rounded-full active:scale-90 shadow-sm`}><Scale size={16}/></button> 
+                <button onClick={() => saveProject("FILL", `${ct} ${cs}"`)} className={`p-2.5 ${themeConfig.accentBg} text-white rounded-full active:scale-90 transition-transform shadow-lg`}><Save size={16}/></button>
               </div> 
             </div> 
             <div id="fill-visualizer"><Visualizer type="conduitFill" data={{ fill: fillPct }} theme={theme}/></div> 
@@ -828,7 +904,13 @@ export default function App() {
               <Result label="Fill Density" value={format(fillPct)} unit="%" highlight={fillPct > 40} theme={theme} settings={settings}/>
               <Result label="Max Code Area" value={format(capArea * 0.4)} unit="in²" theme={theme} settings={settings}/>
               <div className={`mt-3 text-center text-[10px] font-black uppercase tracking-widest ${fillPct > 40 ? 'text-red-500 animate-pulse' : 'text-green-500 opacity-60'}`}>{fillPct > 40 ? 'Violation - Undersized' : 'COMPLIANT'}</div>
-            </div> 
+            </div>
+            <div className="mt-4 flex justify-center">
+              <button onClick={() => handleShare('BendIQ Calculation', getShareText())} className={`flex items-center gap-2 px-4 py-2 ${themeConfig.card} rounded-full shadow-md active:scale-95 transition-transform`}>
+                <Share2 size={14} className={themeConfig.accent} />
+                <span className={`text-[10px] font-black uppercase tracking-widest ${themeConfig.sub}`}>Share</span>
+              </button>
+            </div>
           </div> 
         ); 
       case 'bFill': 
@@ -841,9 +923,9 @@ export default function App() {
                 <h2 className={`text-[11px] font-black uppercase tracking-widest ${themeConfig.accent}`}>Box Volume</h2> 
               </div> 
               <div className="flex items-center gap-2"> 
-                <button onClick={resetTab} className={`p-2.5 ${themeConfig.card} rounded-full active:rotate-180 transition-transform duration-500 shadow-sm`}><RotateCcw size={16}/></button>
-                <button onClick={() => setIsLevelActive(true)} className={`p-2.5 ${themeConfig.card} rounded-full active:scale-90 shadow-sm`}><Gauge size={16}/></button> 
-                <button onClick={() => saveProject("BOX", BOX_DATA[selBox].label)} className={`p-2.5 ${themeConfig.accentBg} text-white rounded-full active:scale-90 transition-transform shadow-lg`}><Save size={16}/></button> 
+              <button onClick={resetTab} className={`p-2.5 ${themeConfig.card} rounded-full active:rotate-180 transition-transform duration-500 shadow-sm`}><RotateCcw size={16}/></button>
+                <button onClick={() => setIsLevelActive(true)} className={`p-2.5 ${themeConfig.card} rounded-full active:scale-90 shadow-sm`}><Scale size={16}/></button> 
+                <button onClick={() => saveProject("BOX", BOX_DATA[selBox].label)} className={`p-2.5 ${themeConfig.accentBg} text-white rounded-full active:scale-90 transition-transform shadow-lg`}><Save size={16}/></button>
               </div> 
             </div> 
             <div id="box-visualizer"><Visualizer type="boxFill" data={{ used: boxUsed, cap: boxCapValue }} theme={theme}/></div> 
@@ -857,7 +939,13 @@ export default function App() {
               <Result label="Calculated" value={format(boxUsed)} unit="in³" highlight={boxUsed > boxCapValue} theme={theme} settings={settings}/>
               <Result label="Capacity" value={boxCapValue} unit="in³" theme={theme} settings={settings}/>
               <div className={`mt-3 text-center text-[10px] font-black uppercase tracking-widest ${boxUsed > boxCapValue ? 'text-red-500 animate-pulse' : 'text-green-500 opacity-60'}`}>{boxUsed > boxCapValue ? 'Violation - Undersized' : 'COMPLIANT'}</div>
-            </div> 
+            </div>
+            <div className="mt-4 flex justify-center">
+              <button onClick={() => handleShare('BendIQ Calculation', getShareText())} className={`flex items-center gap-2 px-4 py-2 ${themeConfig.card} rounded-full shadow-md active:scale-95 transition-transform`}>
+                <Share2 size={14} className={themeConfig.accent} />
+                <span className={`text-[10px] font-black uppercase tracking-widest ${themeConfig.sub}`}>Share</span>
+              </button>
+            </div>
           </div> 
         ); 
       case 'projects': 
@@ -866,9 +954,9 @@ export default function App() {
             <h2 className={`text-xl font-black ${themeConfig.text} uppercase tracking-tighter mb-6`}>Master Vault</h2> 
             {projs.length === 0 ? <div className="text-center py-20 text-slate-600 font-black uppercase tracking-widest text-[10px] opacity-40">Empty Archive</div> : ( 
               <div className="space-y-4">{projs.map(p => ( 
-                <div key={p.id} onClick={() => loadProject(p)} className={`${themeConfig.card} p-5 rounded-3xl flex justify-between items-center group cursor-pointer active:scale-98 shadow-md transition-all border hover:border-blue-500/50`}><div className="flex-1"><h4 className={`text-sm font-black ${themeConfig.text}`}>{p.t}</h4><p className={`text-[9px] ${themeConfig.sub} font-bold`}>{p.dt}</p></div><div className="flex items-center gap-2"><button onClick={(e)=>{e.stopPropagation(); exportPDF(p);}} className={`p-2 ${themeConfig.sub} hover:text-blue-400 ${isExporting ? 'animate-pulse' : ''}`}>{isExporting ? <Loader2 size={18} className="animate-spin" /> : <FileText size={18}/>}</button><button onClick={(e)=>{e.stopPropagation(); setProjs(projs.filter(x=>x.id!==p.id));}} className={`p-2 ${themeConfig.sub} hover:text-red-500`}><Trash2 size={16}/></button></div></div> 
+                <div key={p.id} onClick={() => loadProject(p)} className={`${themeConfig.card} p-5 rounded-3xl flex justify-between items-center group cursor-pointer active:scale-98 shadow-md transition-all border hover:border-blue-500/50`}><div className="flex-1"><h4 className={`text-sm font-black ${themeConfig.text}`}>{p.t}</h4><p className={`text-[9px] ${themeConfig.sub} font-bold`}>{p.dt}</p></div><div className="flex items-center gap-2"><button onClick={(e)=>{e.stopPropagation(); handleShare(`BendIQ: ${p.t}`, `${p.t} - ${p.d} (${p.dt})`);}} className={`p-2 ${themeConfig.sub} hover:text-blue-400`}><Share2 size={16}/></button><button onClick={(e)=>{e.stopPropagation(); exportPDF(p);}} className={`p-2 ${themeConfig.sub} hover:text-blue-400 ${isExporting ? 'animate-pulse' : ''}`}>{isExporting ? <Loader2 size={18} className="animate-spin" /> : <FileText size={18}/>}</button><button onClick={(e)=>{e.stopPropagation(); setProjs(projs.filter(x=>x.id!==p.id));}} className={`p-2 ${themeConfig.sub} hover:text-red-500`}><Trash2 size={16}/></button></div></div> 
               ))}</div> 
-            )} 
+            )}
           </div> 
         ); 
       default: return null; 
