@@ -3,10 +3,9 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import {
   Compass, Maximize2, Layers, RefreshCw, Info,
   AlertCircle, ShieldCheck, Move, CornerDownRight, Save,
-  FolderInput, Trash2, Package, Download, X, Zap, Pencil,
-  FileText, Loader2, Sun, Moon, HardHat, Plus, RotateCcw, ZoomIn,
-  Scale, CheckCircle2, Wand2, AlertTriangle, Settings, Mic, Type, MousePointerClick, Flashlight, Share2,
-  Ruler, Eye, EyeOff, ChevronDown
+  FolderInput, Trash2, Package, Download, X, Zap,
+  FileText, Loader2, Sun, Moon, HardHat, Plus, RotateCcw,
+  Scale, CheckCircle2, Wand2, AlertTriangle, Settings, Mic, Type, MousePointerClick, Flashlight, Share2
 } from 'lucide-react';
 
 // Type declarations for external libraries and APIs
@@ -66,30 +65,6 @@ const CONDUIT_TYPES = {
   "RMC": { label: "Rigid", springback: 0.02 }
 };
 
-// Bender brand take-up values (inches) by conduit size
-const BENDER_DATA = {
-  "Generic": { 
-    label: "Generic/Standard", 
-    takeUp: { "0.5": 5, "0.75": 6, "1": 8, "1.25": 11, "1.5": 12, "2": 15 },
-    deduct: { "0.5": 5, "0.75": 6, "1": 8, "1.25": 11, "1.5": 12, "2": 15 }
-  },
-  "Ideal": { 
-    label: "Ideal", 
-    takeUp: { "0.5": 5, "0.75": 6, "1": 8, "1.25": 11, "1.5": 12, "2": 15 },
-    deduct: { "0.5": 5, "0.75": 6, "1": 8, "1.25": 11, "1.5": 12, "2": 15 }
-  },
-  "Klein": { 
-    label: "Klein", 
-    takeUp: { "0.5": 5, "0.75": 6, "1": 8, "1.25": 11, "1.5": 12, "2": 15 },
-    deduct: { "0.5": 5, "0.75": 6, "1": 8, "1.25": 11, "1.5": 12, "2": 15 }
-  },
-  "Greenlee": { 
-    label: "Greenlee", 
-    takeUp: { "0.5": 5, "0.75": 6, "1": 8, "1.25": 11, "1.5": 12, "2": 15.5 },
-    deduct: { "0.5": 5, "0.75": 6, "1": 8, "1.25": 11, "1.5": 12, "2": 15.5 }
-  }
-};
-
 const toRad = (deg) => (deg * Math.PI) / 180;
 const format = (n) => parseFloat(n).toFixed(2);
 const vibrate = (ms: number) => { if (navigator.vibrate) navigator.vibrate(ms); };
@@ -132,29 +107,6 @@ const Result = ({ label, value, unit="", highlight=false, theme, settings, isShr
     {label} <span className="font-mono font-black">{value}{unit}</span>
   </div>
 );
-const AngleQuickSelect = ({ value, onChange, theme }) => {
-  const angles = [22.5, 30, 45, 90];
-  const isLight = theme === 'light';
-  return (
-    <div className="flex flex-row gap-2 flex-nowrap mb-2">
-      {angles.map(angle => (
-        <button
-          key={angle}
-          onClick={() => { vibrate(18); onChange(angle); }}
-          className={`flex-1 py-1.5 px-2 text-[10px] font-black rounded-full transition-all ${
-            value === angle 
-              ? 'bg-blue-600 text-white shadow-md' 
-              : isLight 
-                ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' 
-                : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-          }`}
-        >
-          {angle}°
-        </button>
-      ))}
-    </div>
-  );
-};
 const Slider = ({ label, value, onChange, min, max, step=1, suffix="", settings }) => (
   <div className="flex flex-col gap-1 mb-4">
     <div className="flex justify-between items-end px-1 mb-1">
@@ -200,89 +152,7 @@ const SpringbackAdvisory = ({ angle, type, theme, bendType, n }) => {
     </div>
   ); 
 };
-const Visualizer = ({ type, data, isForExport = false, theme = 'dark', showMarkingGuide = false, benderType = 'Generic', bendSize = '0.75' }) => { 
-  const [scale, setScale] = useState(1);
-  const [translate, setTranslate] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const lastPosRef = useRef({ x: 0, y: 0 });
-  const initialPinchDistRef = useRef<number | null>(null);
-  const initialScaleRef = useRef<number>(1);
-
-  const resetView = () => {
-    setScale(1);
-    setTranslate({ x: 0, y: 0 });
-  };
-
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? 0.9 : 1.1;
-    setScale(prev => Math.min(Math.max(prev * delta, 0.5), 4));
-  };
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    lastPosRef.current = { x: e.clientX, y: e.clientY };
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
-    const dx = e.clientX - lastPosRef.current.x;
-    const dy = e.clientY - lastPosRef.current.y;
-    setTranslate(prev => ({ x: prev.x + dx, y: prev.y + dy }));
-    lastPosRef.current = { x: e.clientX, y: e.clientY };
-  };
-
-  const handleMouseUp = () => setIsDragging(false);
-
-  // Get distance between two touch points
-  const getTouchDistance = (touches: React.TouchList) => {
-    if (touches.length < 2) return 0;
-    const dx = touches[0].clientX - touches[1].clientX;
-    const dy = touches[0].clientY - touches[1].clientY;
-    return Math.sqrt(dx * dx + dy * dy);
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (e.touches.length === 2) {
-      // Pinch gesture start
-      initialPinchDistRef.current = getTouchDistance(e.touches);
-      initialScaleRef.current = scale;
-    } else if (e.touches.length === 1) {
-      setIsDragging(true);
-      lastPosRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    }
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (e.touches.length === 2 && initialPinchDistRef.current !== null) {
-      // Pinch-to-zoom
-      e.preventDefault();
-      const currentDist = getTouchDistance(e.touches);
-      const scaleChange = currentDist / initialPinchDistRef.current;
-      const newScale = Math.min(Math.max(initialScaleRef.current * scaleChange, 0.5), 4);
-      setScale(newScale);
-    } else if (isDragging && e.touches.length === 1) {
-      const dx = e.touches[0].clientX - lastPosRef.current.x;
-      const dy = e.touches[0].clientY - lastPosRef.current.y;
-      setTranslate(prev => ({ x: prev.x + dx, y: prev.y + dy }));
-      lastPosRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    }
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (e.touches.length < 2) {
-      initialPinchDistRef.current = null;
-    }
-    if (e.touches.length === 0) {
-      setIsDragging(false);
-    }
-  };
-  
-  // Get take-up value for marking guide
-  const takeUp = BENDER_DATA[benderType]?.takeUp[bendSize] || 6;
-  const deduct = BENDER_DATA[benderType]?.deduct[bendSize] || 6;
-
+const Visualizer = ({ type, data, isForExport = false, theme = 'dark' }) => { 
   const geometry = useMemo(() => { 
     const getVal = (v, def=0) => isNaN(parseFloat(v)) ? def : parseFloat(v); 
     const calcBounds = (pts, pad = 100) => { 
@@ -298,6 +168,7 @@ const Visualizer = ({ type, data, isForExport = false, theme = 'dark', showMarki
         <text x={(x1+x2)/2} y={-(y1+y2)/2 - 12} fill={dimColor} fontSize="10" textAnchor="middle" fontWeight="black">{label}</text>
       </g>
     );
+    // Updated pipeColor to match the Save button blue (#2563eb which is blue-600)
     const pipeColor = theme === 'construction' ? '#facc15' : '#2563eb';
     
     switch (type) {
@@ -305,8 +176,9 @@ const Visualizer = ({ type, data, isForExport = false, theme = 'dark', showMarki
         const h = getVal(data.h, 10), a = Math.max(1, getVal(data.a, 30));
         const run = h / Math.tan(toRad(a));
         const strokeWidth = 5;
-        const buffer = strokeWidth / 2 + 1;
+        const buffer = strokeWidth / 2 + 1; // Half stroke + 1px buffer for "kissing" effect
         const pts = [{x:0,y:buffer}, {x:25,y:buffer}, {x:25+run,y:h+buffer}, {x:60+run,y:h+buffer}];
+        // Obstacle: rectangle under the upper run representing floor/surface difference
         const obstacle = {x: 25+run-5, y: 0, w: 40, h: h};
         return { pts, marks: [{...pts[1], l:"1"}, {...pts[2], l:"2"}], dims: <Dim x1={25} y1={0} x2={25+run} y2={0} label={`D: ${format(run)}"`} />, obstacle, vb: calcBounds(pts, 90) };
       }
@@ -315,7 +187,9 @@ const Visualizer = ({ type, data, isForExport = false, theme = 'dark', showMarki
         const run = h / Math.tan(toRad(a/2));
         const strokeWidth = 5;
         const buffer = strokeWidth / 2 + 1;
+        // Conduit path: apex at y = h + buffer so pipe bottom kisses top of obstacle
         const pts = [{x:-run-35,y:buffer}, {x:-run,y:buffer}, {x:0,y:h+buffer}, {x:run,y:buffer}, {x:run+35,y:buffer}];
+        // Obstacle: centered rectangle, height = obstacle height, fixed width 30px
         const obstacleWidth = 30;
         const obstacle = {x: -obstacleWidth/2, y: 0, w: obstacleWidth, h: h};
         return { pts, marks: [{...pts[1], l:"S"}, {...pts[2], l:"C"}, {...pts[3], l:"S"}], dims: <Dim x1={-run} y1={0} x2={run} y2={0} label={`Span: ${format(run*2)}"`} />, obstacle, vb: calcBounds(pts, 90) };
@@ -325,7 +199,9 @@ const Visualizer = ({ type, data, isForExport = false, theme = 'dark', showMarki
         const run = h / Math.tan(toRad(a));
         const strokeWidth = 5;
         const buffer = strokeWidth / 2 + 1;
+        // Conduit path: flat bridge at y = h + buffer so pipe bottom kisses obstacle top
         const pts = [{x:0,y:buffer}, {x:20,y:buffer}, {x:20+run,y:h+buffer}, {x:20+run+w,y:h+buffer}, {x:20+run+w+run,y:buffer}, {x:40+run+w+run,y:buffer}];
+        // Obstacle: centered rectangle with height = h and width = w
         const obstacle = {x: 20+run, y: 0, w: w, h: h};
         return { pts, marks: [{...pts[1], l:"1"},{...pts[2], l:"2"},{...pts[3], l:"3"},{...pts[4], l:"4"}], dims: <Dim x1={20+run} y1={h+15} x2={20+run+w} y2={h+15} label={`W: ${w}"`} />, obstacle, vb: calcBounds(pts, 90) };
       }
@@ -336,14 +212,13 @@ const Visualizer = ({ type, data, isForExport = false, theme = 'dark', showMarki
         const dx = 30, dy = 22;
         const minX = -40, maxX = boxW + dx + 40;
         const minY = -boxH - dy - 40, maxY = 40;
-        const pipeColor = theme === 'construction' ? '#facc15' : '#2563eb';
         return { custom: (
           <g>
             <path d={`M 0 0 L ${boxW} 0 L ${boxW+dx} ${-dy} L ${dx} ${-dy} Z`} fill={theme === 'light' ? '#cbd5e1' : '#1e293b'} opacity="0.2" stroke={dimColor} strokeWidth="0.5" strokeDasharray="2" />
             <path d={`M ${boxW} 0 L ${boxW} ${-boxH} L ${boxW+dx} ${-boxH-dy} L ${boxW+dx} ${-dy} Z`} fill={theme === 'light' ? '#94a3b8' : '#334155'} opacity="0.3" stroke={dimColor} strokeWidth="0.5" strokeDasharray="2" />
             <path d={`M ${boxW+dx} ${-dy} L ${boxW+dx} ${-boxH-dy} L ${dx} ${-boxH-dy} L ${dx} ${-dy} Z`} fill={theme === 'light' ? '#cbd5e1' : '#1e293b'} opacity="0.1" stroke={dimColor} strokeWidth="0.5" strokeDasharray="2" />
-            <circle cx="0" cy="0" r="2" fill={pipeColor} stroke="white" strokeWidth="1" />
-            <circle cx={boxW+dx} cy={-(boxH+dy)} r="2" fill={pipeColor} stroke="white" strokeWidth="1" />
+            <circle cx="0" cy="0" r="2" fill={theme === 'construction' ? '#facc15' : '#2563eb'} stroke="white" strokeWidth="1" />
+            <circle cx={boxW+dx} cy={-(boxH+dy)} r="2" fill={theme === 'construction' ? '#facc15' : '#2563eb'} stroke="white" strokeWidth="1" />
             <text x={boxW/2} y={15} fill={dimColor} fontSize="9" fontWeight="bold" textAnchor="middle">ROLL: {o}"</text>
             <text x={boxW+dx+15} y={-boxH/2-dy} fill={dimColor} fontSize="9" fontWeight="bold" transform={`rotate(-90, ${boxW+dx+15}, ${-boxH/2-dy})`} textAnchor="middle">RISE: {r}"</text>
             <g transform={`translate(${(boxW+dx)/2}, ${-(boxH+dy)/2 - 15})`}>
@@ -363,7 +238,6 @@ const Visualizer = ({ type, data, isForExport = false, theme = 'dark', showMarki
         const runLen = 40;
         const totalHeight = sPx * (numPipes - 1) + 60;
         const totalWidth = runLen + (staggerPx * (numPipes - 1)) + 60;
-        const pipeColor = theme === 'construction' ? '#facc15' : '#2563eb';
         const drawPath = (y, startX, key) => {
           const bendStart = startX + runLen;
           const radA = toRad(a);
@@ -408,29 +282,30 @@ const Visualizer = ({ type, data, isForExport = false, theme = 'dark', showMarki
         const nVal = getVal(data.n, 5);
         const pts = [];
         const step = toRad(aVal) / nVal;
-        const pipeColor = theme === 'construction' ? '#facc15' : '#2563eb';
         for(let i=0; i<=nVal; i++) {
           const theta = i * step;
           pts.push({
             x: rVal * Math.sin(theta),
             y: rVal - (rVal * Math.cos(theta)),
-            angle: theta
+            angle: theta // Store angle for perpendicular hash marks
           });
         }
         const pathData = pts.map((p, i) => (i===0 ? `M ${p.x} ${-p.y}` : `L ${p.x} ${-p.y}`)).join(" ");
         const maxX = pts[pts.length-1].x;
         const minY = -pts[pts.length-1].y;
         const pad = 50;
-        const hashLength = 6;
+        const hashLength = 6; // Length of hash mark
         return {
           custom: (
             <g>
               <path d={pathData} fill="none" stroke={pipeColor} strokeWidth="3" strokeLinecap="round" />
               {pts.map((p,i) => {
-                const perpX = Math.cos(p.angle);
+                // Calculate perpendicular direction for hash marks (tangent is perpendicular to radius)
+                const perpX = Math.cos(p.angle); // Perpendicular to curve (tangent direction)
                 const perpY = Math.sin(p.angle);
                 return (
                   <g key={i}>
+                    {/* Hash mark: line perpendicular to the curve */}
                     <line 
                       x1={p.x - perpX * hashLength} 
                       y1={-(p.y - perpY * hashLength)} 
@@ -456,6 +331,7 @@ const Visualizer = ({ type, data, isForExport = false, theme = 'dark', showMarki
       }
       case 'conduitFill': {
         const fill = getVal(data.fill, 40);
+        // Updated fill color logic to match blue-600 #2563eb
         const color = fill > 40 ? '#ef4444' : (theme === 'construction' ? '#facc15' : '#2563eb');
         const isLight = theme === 'light';
         return { custom: (
@@ -485,103 +361,37 @@ const Visualizer = ({ type, data, isForExport = false, theme = 'dark', showMarki
     }
   }, [type, data, theme]);
   
+  // Updated height to h-80 (large visualizer), set bg-white for all visualization fields in light mode
+  // Using preserveAspectRatio to ensure centering
   const bgClass = theme === 'light' ? 'bg-white border border-slate-200' : 'bg-slate-900/50';
   
   return (
-    <div 
-      ref={containerRef}
-      className={`relative w-full h-80 rounded-2xl overflow-hidden ${bgClass} cursor-grab active:cursor-grabbing`}
-      onWheel={handleWheel}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-    >
-      <svg 
-        viewBox={geometry.vb.join(' ')} 
-        preserveAspectRatio="xMidYMid meet" 
-        className="w-full h-full"
-        style={{ transform: `scale(${scale}) translate(${translate.x / scale}px, ${translate.y / scale}px)` }}
-      >
-        {geometry.custom || (
-          <g>
-            {geometry.obstacle && (
-              <rect 
-                x={geometry.obstacle.x} 
-                y={-(geometry.obstacle.y + geometry.obstacle.h)} 
-                width={geometry.obstacle.w} 
-                height={geometry.obstacle.h} 
-                fill="#E5E7EB" 
-                fillOpacity="0.6" 
-                rx="3" 
-              />
-            )}
-            <path d={getRoundedPath(geometry.pts)} fill="none" stroke={theme === 'construction' ? '#facc15' : '#2563eb'} strokeWidth="5" strokeLinecap="round" />
-            {geometry.marks?.map((m,i) => (
-              <g key={i}>
-                <circle cx={m.x} cy={-m.y} r="2" fill="white" stroke={theme === 'construction' ? '#facc15' : '#2563eb'} strokeWidth="1" />
-                <text x={m.x} y={-m.y + 2} fill={theme === 'construction' ? '#facc15' : '#2563eb'} fontSize="10" textAnchor="middle" fontWeight="bold">{m.l}</text>
-              </g>
-            ))}
-            {geometry.dims}
-            
-            {/* Marking Guide Overlay */}
-            {showMarkingGuide && geometry.pts && geometry.pts.length >= 2 && (
-              <g className="marking-guide">
-                {/* Tape measure anchor at start of pipe */}
-                <g transform={`translate(${geometry.pts[0].x - 15}, ${-geometry.pts[0].y})`}>
-                  <rect x="-12" y="-8" width="24" height="16" rx="3" fill="#10b981" fillOpacity="0.9" />
-                  <text x="0" y="4" fill="white" fontSize="8" textAnchor="middle" fontWeight="bold">📍 0"</text>
-                </g>
-                
-                {/* Pencil marks at bend points */}
-                {geometry.marks?.map((m, i) => (
-                  <g key={`mark-${i}`}>
-                    {/* Tick mark on pipe */}
-                    <line 
-                      x1={m.x} y1={-m.y - 12} 
-                      x2={m.x} y2={-m.y + 12} 
-                      stroke="#ef4444" strokeWidth="2" strokeLinecap="round"
-                    />
-                    {/* Pencil icon */}
-                    <g transform={`translate(${m.x}, ${-m.y - 25})`}>
-                      <rect x="-18" y="-10" width="36" height="20" rx="4" fill="#ef4444" fillOpacity="0.9" />
-                      <text x="0" y="4" fill="white" fontSize="7" textAnchor="middle" fontWeight="bold">✏️ MARK</text>
-                    </g>
-                  </g>
-                ))}
-                
-                {/* Deduction/Shrinkage bracket */}
-                {type === 'offset' && (
-                  <g>
-                    <line 
-                      x1={geometry.pts[0].x} y1={-geometry.pts[0].y + 25} 
-                      x2={geometry.pts[0].x + takeUp} y2={-geometry.pts[0].y + 25} 
-                      stroke="#f59e0b" strokeWidth="2" 
-                    />
-                    <line x1={geometry.pts[0].x} y1={-geometry.pts[0].y + 20} x2={geometry.pts[0].x} y2={-geometry.pts[0].y + 30} stroke="#f59e0b" strokeWidth="2" />
-                    <line x1={geometry.pts[0].x + takeUp} y1={-geometry.pts[0].y + 20} x2={geometry.pts[0].x + takeUp} y2={-geometry.pts[0].y + 30} stroke="#f59e0b" strokeWidth="2" />
-                    <rect x={geometry.pts[0].x + takeUp/2 - 22} y={-geometry.pts[0].y + 32} width="44" height="16" rx="3" fill="#f59e0b" />
-                    <text x={geometry.pts[0].x + takeUp/2} y={-geometry.pts[0].y + 43} fill="white" fontSize="7" textAnchor="middle" fontWeight="bold">Take-up: {takeUp}"</text>
-                  </g>
-                )}
-              </g>
-            )}
-          </g>
-        )}
-      </svg>
-      {(scale !== 1 || translate.x !== 0 || translate.y !== 0) && (
-        <button 
-          onClick={(e) => { e.stopPropagation(); vibrate(18); resetView(); }}
-          className={`absolute bottom-2 right-2 p-2 ${theme === 'light' ? 'bg-slate-100 hover:bg-slate-200' : 'bg-slate-800 hover:bg-slate-700'} rounded-full shadow-lg transition-colors z-10`}
-        >
-          <ZoomIn size={14} className={theme === 'light' ? 'text-slate-600' : 'text-slate-300'} />
-        </button>
+    <svg viewBox={geometry.vb.join(' ')} preserveAspectRatio="xMidYMid meet" className={`w-full h-80 rounded-2xl ${bgClass}`}>
+      {geometry.custom || (
+        <g>
+          {/* Obstacle rendered behind (first) with semi-transparent grey #E5E7EB */}
+          {geometry.obstacle && (
+            <rect 
+              x={geometry.obstacle.x} 
+              y={-(geometry.obstacle.y + geometry.obstacle.h)} 
+              width={geometry.obstacle.w} 
+              height={geometry.obstacle.h} 
+              fill="#E5E7EB" 
+              fillOpacity="0.6" 
+              rx="3" 
+            />
+          )}
+          <path d={getRoundedPath(geometry.pts)} fill="none" stroke={theme === 'construction' ? '#facc15' : '#2563eb'} strokeWidth="5" strokeLinecap="round" />
+          {geometry.marks?.map((m,i) => (
+            <g key={i}>
+              <circle cx={m.x} cy={-m.y} r="2" fill="white" stroke={theme === 'construction' ? '#facc15' : '#2563eb'} strokeWidth="1" />
+              <text x={m.x} y={-m.y + 2} fill={theme === 'construction' ? '#facc15' : '#2563eb'} fontSize="10" textAnchor="middle" fontWeight="bold">{m.l}</text>
+            </g>
+          ))}
+          {geometry.dims}
+        </g>
       )}
-    </div>
+    </svg>
   ); 
 };
 const LevelModal = ({ targetAngle, onClose, themeConfig, theme }) => {
@@ -691,40 +501,6 @@ const SettingsModal = ({ onClose, onClear, onDelete, settings, setSettings, them
     </div>
   ); 
 };
-const RenameModal = ({ project, onSave, onClose, themeConfig, theme }) => {
-  const [newName, setNewName] = useState(project?.t || '');
-  const isLight = theme === 'light';
-  
-  const handleSave = () => {
-    if (newName.trim()) {
-      onSave(project.id, newName.trim());
-      onClose();
-    }
-  };
-
-  return (
-    <div className={`fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-[100] p-6`}>
-      <div className={`${themeConfig.card} p-6 rounded-3xl w-full max-w-sm shadow-2xl space-y-4`}>
-        <div className="flex justify-between items-center">
-          <h2 className={`text-lg font-black uppercase tracking-widest ${themeConfig.text}`}>Rename Project</h2>
-          <button onClick={onClose} className={`p-2 ${isLight ? 'bg-slate-200 hover:bg-slate-300' : 'bg-white/10 hover:bg-white/20'} rounded-full`}><X size={20} className={themeConfig.text} /></button>
-        </div>
-        <input
-          type="text"
-          value={newName}
-          onChange={(e) => setNewName(e.target.value)}
-          placeholder="Enter new name"
-          className={`w-full p-4 rounded-xl text-sm font-bold outline-none ${themeConfig.inset} ${themeConfig.text} border`}
-          autoFocus
-        />
-        <div className="flex gap-3">
-          <button onClick={onClose} className={`flex-1 p-3 rounded-xl ${isLight ? 'bg-slate-200 text-slate-700' : 'bg-slate-700 text-slate-300'} font-bold text-sm`}>Cancel</button>
-          <button onClick={handleSave} className={`flex-1 p-3 rounded-xl ${themeConfig.accentBg} text-white font-bold text-sm`}>Save</button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 export default function App() { 
   const [activeTab, setActiveTab] = useState('bending'); 
@@ -736,9 +512,6 @@ export default function App() {
   const [isLevelActive, setIsLevelActive] = useState(false); 
   const [showSettings, setShowSettings] = useState(false);
   const [flashlightOn, setFlashlightOn] = useState(false);
-  const [renameProject, setRenameProject] = useState(null);
-  const [benderType, setBenderType] = useState('Generic');
-  const [showMarkingGuide, setShowMarkingGuide] = useState(false);
   const streamRef = useRef(null);
   const [settings, setSettings] = useState({
     voice: false,
@@ -927,11 +700,6 @@ export default function App() {
     setToast({ s: true, m: "State Recovered" });
     setTimeout(() => setToast({ s: false, m: "" }), 2000);
   };
-  const handleRenameProject = (projectId: number, newName: string) => {
-    setProjs(projs.map(p => p.id === projectId ? { ...p, t: newName } : p));
-    setToast({ s: true, m: "Project Renamed" });
-    setTimeout(() => setToast({ s: false, m: "" }), 2000);
-  };
   const addGauge = (gauge) => {
     const existing = wires.find(w => w.s === gauge);
     if (existing) {
@@ -992,12 +760,11 @@ export default function App() {
                   <span className="text-sm text-blue-400 font-mono font-bold leading-none">{a}°</span>
                 </div>
               </div>
-              <AngleQuickSelect value={a} onChange={(val) => { setA(val); setAutoAngle(false); }} theme={theme} />
               <input type="range" min={10} max={90} step={1} value={a} onChange={(e) => handleManualAngle(e.target.value)} className={`w-full ${settings.largeTargets ? 'h-4' : 'h-1.5'} bg-slate-800 rounded-full appearance-none accent-blue-600 cursor-pointer shadow-inner mb-4`} />
               <Result label="Travel" value={format(travel)} unit='"' highlight theme={theme} settings={settings}/>
               <Result label="Shrinkage" value={format(shrink)} unit='"' theme={theme} settings={settings} isShrinkage={true}/>
             </>
-          );
+          ); 
         } else if (bendType === 'saddle3') { 
           const radS = toRad(a/2); const s3dist = h / Math.sin(radS); 
           // Shrinkage for 3-Point Saddle: h * (csc(θ) - cot(θ)) where θ is the side angle (a/2)
@@ -1012,8 +779,7 @@ export default function App() {
                   <button onClick={() => setAutoAngle(!autoAngle)} className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full transition-colors ${autoAngle ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-400'}`}> <Wand2 size={10} className="inline mr-1" />{autoAngle ? "Auto" : "Manual"}</button> 
                   <span className="text-sm text-blue-400 font-mono font-bold leading-none">{a}°</span> 
                 </div> 
-              </div>
-              <AngleQuickSelect value={a} onChange={(val) => { setA(val); setAutoAngle(false); }} theme={theme} />
+              </div> 
               <input type="range" min={10} max={90} step={1} value={a} onChange={(e) => handleManualAngle(e.target.value)} className={`w-full ${settings.largeTargets ? 'h-4' : 'h-1.5'} bg-slate-800 rounded-full appearance-none accent-blue-600 cursor-pointer shadow-inner mb-4`} /> 
               <Result label="Center to Side" value={format(s3dist)} unit='"' highlight theme={theme} settings={settings}/>
               <Result label="Shrinkage" value={format(shrinkage3)} unit='"' theme={theme} settings={settings} isShrinkage={true}/>
@@ -1034,8 +800,7 @@ export default function App() {
                   <button onClick={() => setAutoAngle(!autoAngle)} className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full transition-colors ${autoAngle ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-400'}`}> <Wand2 size={10} className="inline mr-1" />{autoAngle ? "Auto" : "Manual"}</button> 
                   <span className="text-sm text-blue-400 font-mono font-bold leading-none">{a}°</span> 
                 </div> 
-              </div>
-              <AngleQuickSelect value={a} onChange={(val) => { setA(val); setAutoAngle(false); }} theme={theme} />
+              </div> 
               <input type="range" min={5} max={60} step={1} value={a} onChange={(e) => handleManualAngle(e.target.value)} className={`w-full ${settings.largeTargets ? 'h-4' : 'h-1.5'} bg-slate-800 rounded-full appearance-none accent-blue-600 cursor-pointer shadow-inner mb-4`} /> 
               <Result label="Travel" value={format(s4travel)} unit='"' highlight theme={theme} settings={settings}/>
               <Result label="Shrinkage" value={format(shrinkage4)} unit='"' theme={theme} settings={settings} isShrinkage={true}/>
@@ -1082,33 +847,8 @@ export default function App() {
                     <button key={item.id} onClick={() => { vibrate(12); setBendType(item.id); }} className={`flex items-center gap-1.5 ${settings.largeTargets ? 'px-5 py-3' : 'px-3 py-1.5'} rounded-full transition-all whitespace-nowrap ${bendType === item.id ? themeConfig.tabActive : 'text-slate-400'}`}><item.icon size={12}/><span className="text-[10px] font-black uppercase tracking-tight">{item.l}</span></button> 
                   ))} 
                 </div> 
-              </div>
-              {/* Marking Guide Toggle */}
-              <div className="flex justify-center mb-2">
-                <button 
-                  onClick={() => { vibrate(18); setShowMarkingGuide(!showMarkingGuide); }}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all ${
-                    showMarkingGuide 
-                      ? 'bg-green-500 text-white shadow-lg' 
-                      : `${themeConfig.card} ${themeConfig.text}`
-                  }`}
-                >
-                  {showMarkingGuide ? <Eye size={14} /> : <EyeOff size={14} />}
-                  <span className="text-[10px] font-black uppercase tracking-wide">
-                    {showMarkingGuide ? 'Marking Guide ON' : 'Show Marking Guide'}
-                  </span>
-                </button>
-              </div>
-              <div id="bending-visualizer">
-                <Visualizer 
-                  type={bendType} 
-                  data={visData} 
-                  theme={theme} 
-                  showMarkingGuide={showMarkingGuide}
-                  benderType={benderType}
-                  bendSize={bendSize}
-                />
               </div> 
+              <div id="bending-visualizer"><Visualizer type={bendType} data={visData} theme={theme}/></div> 
             </div> 
             <div className="grid grid-cols-2 gap-2 mb-4 items-end"> 
               <div className={`grid grid-cols-3 gap-1 ${themeConfig.tabBg} p-1 rounded-xl`}> 
@@ -1118,31 +858,7 @@ export default function App() {
                 <label className={`text-[8px] font-black uppercase tracking-widest ${themeConfig.sub} text-center`}>Select conduit size</label> 
                 <select className={`${themeConfig.inset} text-[10px] font-black p-1.5 rounded-xl outline-none appearance-none border-none text-center ${themeConfig.text}`} value={bendSize} onChange={(e)=>setBendSize(e.target.value)}>{['0.5','0.75','1','1.25','1.5','2','2.5','3'].map(s=><option key={s} value={s}>{s}"</option>)}</select> 
               </div> 
-            </div>
-            {/* Bender Selector */}
-            <div className={`mb-4 p-3 ${themeConfig.card} rounded-2xl`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Ruler size={14} className={themeConfig.accent} />
-                  <label className={`text-[10px] font-black uppercase tracking-widest ${themeConfig.sub}`}>Bender Type</label>
-                </div>
-                <div className="relative">
-                  <select 
-                    className={`${themeConfig.inset} text-[11px] font-bold pl-3 pr-8 py-2 rounded-xl outline-none appearance-none border ${themeConfig.text} cursor-pointer`}
-                    value={benderType}
-                    onChange={(e) => { vibrate(12); setBenderType(e.target.value); }}
-                  >
-                    {Object.entries(BENDER_DATA).map(([key, val]) => (
-                      <option key={key} value={key}>{val.label}</option>
-                    ))}
-                  </select>
-                  <ChevronDown size={14} className={`absolute right-2 top-1/2 -translate-y-1/2 ${themeConfig.sub} pointer-events-none`} />
-                </div>
-              </div>
-              <div className={`mt-2 text-[9px] ${themeConfig.sub} text-center`}>
-                Take-up for {bendSize}" conduit: <span className={`font-black ${themeConfig.accent}`}>{BENDER_DATA[benderType]?.takeUp[bendSize] || 'N/A'}"</span>
-              </div>
-            </div>
+            </div> 
             <div className={`${themeConfig.card} p-6 rounded-3xl shadow-lg`}> 
               {resultNode} 
               <WarningBox warnings={warnings} theme={theme}/> 
@@ -1258,19 +974,8 @@ export default function App() {
             <h2 className={`text-xl font-black ${themeConfig.text} uppercase tracking-tighter mb-6`}>Master Vault</h2> 
             {projs.length === 0 ? <div className="text-center py-20 text-slate-600 font-black uppercase tracking-widest text-[10px] opacity-40">Empty Archive</div> : ( 
               <div className="space-y-4">{projs.map(p => ( 
-                <div key={p.id} onClick={() => { vibrate(18); loadProject(p); }} className={`${themeConfig.card} p-5 rounded-3xl flex justify-between items-center group cursor-pointer active:scale-98 shadow-md transition-all border hover:border-blue-500/50`}>
-                  <div className="flex-1">
-                    <h4 className={`text-sm font-black ${themeConfig.text}`}>{p.t}</h4>
-                    <p className={`text-[9px] ${themeConfig.sub} font-bold`}>{p.dt}</p>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <button onClick={(e)=>{e.stopPropagation(); vibrate(18); setRenameProject(p);}} className={`p-2 ${themeConfig.sub} hover:text-blue-400`}><Pencil size={16}/></button>
-                    <button onClick={(e)=>{e.stopPropagation(); vibrate(18); handleShare(`BendIQ: ${p.t}`, `${p.t} - ${p.d} (${p.dt})`);}} className={`p-2 ${themeConfig.sub} hover:text-blue-400`}><Share2 size={16}/></button>
-                    <button onClick={(e)=>{e.stopPropagation(); vibrate(18); exportPDF(p);}} className={`p-2 ${themeConfig.sub} hover:text-blue-400 ${isExporting ? 'animate-pulse' : ''}`}>{isExporting ? <Loader2 size={18} className="animate-spin" /> : <FileText size={18}/>}</button>
-                    <button onClick={(e)=>{e.stopPropagation(); vibrate(18); setProjs(projs.filter(x=>x.id!==p.id));}} className={`p-2 ${themeConfig.sub} hover:text-red-500`}><Trash2 size={16}/></button>
-                  </div>
-                </div> 
-              ))}</div>
+                <div key={p.id} onClick={() => { vibrate(18); loadProject(p); }} className={`${themeConfig.card} p-5 rounded-3xl flex justify-between items-center group cursor-pointer active:scale-98 shadow-md transition-all border hover:border-blue-500/50`}><div className="flex-1"><h4 className={`text-sm font-black ${themeConfig.text}`}>{p.t}</h4><p className={`text-[9px] ${themeConfig.sub} font-bold`}>{p.dt}</p></div><div className="flex items-center gap-2"><button onClick={(e)=>{e.stopPropagation(); vibrate(18); handleShare(`BendIQ: ${p.t}`, `${p.t} - ${p.d} (${p.dt})`);}} className={`p-2 ${themeConfig.sub} hover:text-blue-400`}><Share2 size={16}/></button><button onClick={(e)=>{e.stopPropagation(); vibrate(18); exportPDF(p);}} className={`p-2 ${themeConfig.sub} hover:text-blue-400 ${isExporting ? 'animate-pulse' : ''}`}>{isExporting ? <Loader2 size={18} className="animate-spin" /> : <FileText size={18}/>}</button><button onClick={(e)=>{e.stopPropagation(); vibrate(18); setProjs(projs.filter(x=>x.id!==p.id));}} className={`p-2 ${themeConfig.sub} hover:text-red-500`}><Trash2 size={16}/></button></div></div> 
+              ))}</div> 
             )}
           </div> 
         ); 
@@ -1306,10 +1011,7 @@ export default function App() {
       )} 
       {showSettings && ( 
         <SettingsModal onClose={() => setShowSettings(false)} onClear={handleClearData} onDelete={handleDeleteAccount} settings={settings} setSettings={setSettings} themeConfig={themeConfig} theme={theme} /> 
-      )}
-      {renameProject && (
-        <RenameModal project={renameProject} onSave={handleRenameProject} onClose={() => setRenameProject(null)} themeConfig={themeConfig} theme={theme} />
-      )}
+      )} 
       <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md h-20 ${theme === 'light' ? 'bg-slate-50 border-slate-200 shadow-xl' : 'bg-slate-900 border-white/5'} backdrop-blur-xl border rounded-[2.5rem] px-6 flex items-center justify-around z-50 shadow-2xl`}> 
         {[{id:'bending',icon:Move,l:'Bends'},{id:'cFill',icon:Download,l:'Conduit Fill'},{id:'bFill',icon:Package,l:'Box Fill'},{id:'projects',icon:FolderInput,l:'Vault'}].map(tab => ( 
           <button key={tab.id} onClick={() => { vibrate(12); setActiveTab(tab.id); }} className={`flex flex-col items-center gap-1.5 transition-all relative ${activeTab === tab.id ? themeConfig.accent : (theme === 'light' ? 'text-slate-400' : 'text-slate-500')}`}> 
