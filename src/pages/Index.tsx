@@ -15,7 +15,7 @@ const projectDataSchema = z.object({
   a: z.number().min(0).max(90).optional(),
   w: z.number().optional(),
   r: z.number().optional(),
-  n: z.number().optional(),
+  n: z.number().optional()
   offsetR: z.number().optional(),
   offsetO: z.number().optional(),
   s: z.number().optional(),
