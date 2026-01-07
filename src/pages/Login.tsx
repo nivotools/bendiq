@@ -75,7 +75,9 @@ const Login: React.FC = () => {
       }
       navigate("/");
     } catch (err: any) {
-      console.error(err);
+      if (import.meta.env.DEV) {
+        console.error(err);
+      }
       setError(getErrorMessage(err.code));
     } finally {
       setLoading(false);
@@ -91,7 +93,9 @@ const Login: React.FC = () => {
       await signInWithPopup(auth, provider);
       navigate("/");
     } catch (err: any) {
-      console.error(err);
+      if (import.meta.env.DEV) {
+        console.error(err);
+      }
       setError(getErrorMessage(err.code));
     } finally {
       setLoading(false);

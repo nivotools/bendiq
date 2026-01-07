@@ -316,7 +316,9 @@ const LevelModal = ({ targetAngle, onClose, themeConfig, theme }: any) => {
             window.addEventListener('deviceorientation', handleOrientation);
           }
         } catch (error) {
-          console.error('Error requesting device orientation permission:', error);
+          if (import.meta.env.DEV) {
+            console.error('Error requesting device orientation permission:', error);
+          }
         }
       } else {
         setHasPermission(true);
@@ -508,7 +510,9 @@ export default function Index() {
           const validated = projectsArraySchema.parse(parsed);
           setProjs(validated);
         } catch (error) {
-          console.error('Invalid project data in localStorage, clearing:', error);
+          if (import.meta.env.DEV) {
+            console.error('Invalid project data in localStorage, clearing:', error);
+          }
           localStorage.removeItem(`bendiq_projects_${user.uid}`);
           setProjs([]);
         }
@@ -563,7 +567,9 @@ export default function Index() {
         streamRef.current = stream;
         setFlashlightOn(true);
       } catch (err) {
-        console.error(err);
+        if (import.meta.env.DEV) {
+          console.error(err);
+        }
         setToast({ s: true, m: "Camera/Flash Error" });
         setTimeout(() => setToast({ s: false, m: "" }), 2000);
       }
@@ -613,7 +619,9 @@ export default function Index() {
         setTimeout(() => setToast({ s: false, m: "" }), 2000);
       }
     } catch (err) {
-      console.error('Share failed:', err);
+      if (import.meta.env.DEV) {
+        console.error('Share failed:', err);
+      }
     }
   };
 
@@ -682,7 +690,9 @@ export default function Index() {
       setToast({ s: true, m: "Project Loaded" });
       setTimeout(() => setToast({ s: false, m: "" }), 2000);
     } catch (error) {
-      console.error('Invalid project data:', error);
+      if (import.meta.env.DEV) {
+        console.error('Invalid project data:', error);
+      }
       setToast({ s: true, m: "Invalid Project Data" });
       setTimeout(() => setToast({ s: false, m: "" }), 2000);
     }
@@ -707,7 +717,9 @@ export default function Index() {
     try {
       await signOut();
     } catch (err) {
-      console.error('Logout failed:', err);
+      if (import.meta.env.DEV) {
+        console.error('Logout failed:', err);
+      }
     }
   };
 
