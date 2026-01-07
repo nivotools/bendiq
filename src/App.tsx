@@ -67,6 +67,7 @@ const CONDUIT_TYPES = {
 
 const toRad = (deg) => (deg * Math.PI) / 180;
 const format = (n) => parseFloat(n).toFixed(2);
+const vibrate = (ms: number) => { if (navigator.vibrate) navigator.vibrate(ms); };
 const loadScript = (src) => {
   return new Promise((resolve) => {
     const script = document.createElement('script');
@@ -112,7 +113,7 @@ const Slider = ({ label, value, onChange, min, max, step=1, suffix="", settings 
       <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">{label}</label>
       <span className="text-sm text-blue-500 font-mono font-bold leading-none">{value}{suffix}</span>
     </div>
-    <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(parseFloat(e.target.value))} className={`w-full ${settings.largeTargets ? 'h-4' : 'h-1.5'} bg-slate-800 rounded-full appearance-none accent-blue-600 cursor-pointer shadow-inner`} />
+    <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => { vibrate(8); onChange(parseFloat(e.target.value)); }} className={`w-full ${settings.largeTargets ? 'h-4' : 'h-1.5'} bg-slate-800 rounded-full appearance-none accent-blue-600 cursor-pointer shadow-inner`} />
   </div>
 );
 const WarningBox = ({ warnings, theme }) => { 
@@ -174,8 +175,9 @@ const Visualizer = ({ type, data, isForExport = false, theme = 'dark' }) => {
       case 'offset': {
         const h = getVal(data.h, 10), a = Math.max(1, getVal(data.a, 30));
         const run = h / Math.tan(toRad(a));
-        const pipeThickness = 5;
-        const pts = [{x:0,y:pipeThickness/2}, {x:25,y:pipeThickness/2}, {x:25+run,y:h+pipeThickness/2}, {x:60+run,y:h+pipeThickness/2}];
+        const strokeWidth = 5;
+        const buffer = strokeWidth / 2 + 1; // Half stroke + 1px buffer for "kissing" effect
+        const pts = [{x:0,y:buffer}, {x:25,y:buffer}, {x:25+run,y:h+buffer}, {x:60+run,y:h+buffer}];
         // Obstacle: rectangle under the upper run representing floor/surface difference
         const obstacle = {x: 25+run-5, y: 0, w: 40, h: h};
         return { pts, marks: [{...pts[1], l:"1"}, {...pts[2], l:"2"}], dims: <Dim x1={25} y1={0} x2={25+run} y2={0} label={`D: ${format(run)}"`} />, obstacle, vb: calcBounds(pts, 90) };
@@ -183,9 +185,10 @@ const Visualizer = ({ type, data, isForExport = false, theme = 'dark' }) => {
       case 'saddle3': {
         const h = getVal(data.h, 20), a = getVal(data.a, 45);
         const run = h / Math.tan(toRad(a/2));
-        const pipeThickness = 5;
-        // Conduit path: apex at y = h + pipeThickness/2 so pipe touches top of obstacle
-        const pts = [{x:-run-35,y:pipeThickness/2}, {x:-run,y:pipeThickness/2}, {x:0,y:h+pipeThickness/2}, {x:run,y:pipeThickness/2}, {x:run+35,y:pipeThickness/2}];
+        const strokeWidth = 5;
+        const buffer = strokeWidth / 2 + 1;
+        // Conduit path: apex at y = h + buffer so pipe bottom kisses top of obstacle
+        const pts = [{x:-run-35,y:buffer}, {x:-run,y:buffer}, {x:0,y:h+buffer}, {x:run,y:buffer}, {x:run+35,y:buffer}];
         // Obstacle: centered rectangle, height = obstacle height, fixed width 30px
         const obstacleWidth = 30;
         const obstacle = {x: -obstacleWidth/2, y: 0, w: obstacleWidth, h: h};
@@ -194,9 +197,10 @@ const Visualizer = ({ type, data, isForExport = false, theme = 'dark' }) => {
       case 'saddle4': {
         const h = getVal(data.h, 20), w = getVal(data.w, 25), a = getVal(data.a, 45);
         const run = h / Math.tan(toRad(a));
-        const pipeThickness = 5;
-        // Conduit path: flat bridge at y = h + pipeThickness/2 so pipe runs parallel above obstacle
-        const pts = [{x:0,y:pipeThickness/2}, {x:20,y:pipeThickness/2}, {x:20+run,y:h+pipeThickness/2}, {x:20+run+w,y:h+pipeThickness/2}, {x:20+run+w+run,y:pipeThickness/2}, {x:40+run+w+run,y:pipeThickness/2}];
+        const strokeWidth = 5;
+        const buffer = strokeWidth / 2 + 1;
+        // Conduit path: flat bridge at y = h + buffer so pipe bottom kisses obstacle top
+        const pts = [{x:0,y:buffer}, {x:20,y:buffer}, {x:20+run,y:h+buffer}, {x:20+run+w,y:h+buffer}, {x:20+run+w+run,y:buffer}, {x:40+run+w+run,y:buffer}];
         // Obstacle: centered rectangle with height = h and width = w
         const obstacle = {x: 20+run, y: 0, w: w, h: h};
         return { pts, marks: [{...pts[1], l:"1"},{...pts[2], l:"2"},{...pts[3], l:"3"},{...pts[4], l:"4"}], dims: <Dim x1={20+run} y1={h+15} x2={20+run+w} y2={h+15} label={`W: ${w}"`} />, obstacle, vb: calcBounds(pts, 90) };
@@ -282,25 +286,41 @@ const Visualizer = ({ type, data, isForExport = false, theme = 'dark' }) => {
           const theta = i * step;
           pts.push({
             x: rVal * Math.sin(theta),
-            y: rVal - (rVal * Math.cos(theta))
+            y: rVal - (rVal * Math.cos(theta)),
+            angle: theta // Store angle for perpendicular hash marks
           });
         }
         const pathData = pts.map((p, i) => (i===0 ? `M ${p.x} ${-p.y}` : `L ${p.x} ${-p.y}`)).join(" ");
         const maxX = pts[pts.length-1].x;
         const minY = -pts[pts.length-1].y;
         const pad = 50;
+        const hashLength = 6; // Length of hash mark
         return {
           custom: (
             <g>
               <path d={pathData} fill="none" stroke={pipeColor} strokeWidth="3" strokeLinecap="round" />
-              {pts.map((p,i) => (
-                <g key={i}>
-                  <circle cx={p.x} cy={-p.y} r="2" fill="white" stroke={pipeColor} strokeWidth="1"/>
-                  {(i === 0 || i === nVal || (nVal < 6) || (i % 2 === 0)) && (
-                    <text x={p.x} y={-p.y + 2} fill={pipeColor} fontSize="10" textAnchor="middle" fontWeight="bold">{i}</text>
-                  )}
-                </g>
-              ))}
+              {pts.map((p,i) => {
+                // Calculate perpendicular direction for hash marks (tangent is perpendicular to radius)
+                const perpX = Math.cos(p.angle); // Perpendicular to curve (tangent direction)
+                const perpY = Math.sin(p.angle);
+                return (
+                  <g key={i}>
+                    {/* Hash mark: line perpendicular to the curve */}
+                    <line 
+                      x1={p.x - perpX * hashLength} 
+                      y1={-(p.y - perpY * hashLength)} 
+                      x2={p.x + perpX * hashLength} 
+                      y2={-(p.y + perpY * hashLength)} 
+                      stroke={pipeColor} 
+                      strokeWidth="2" 
+                      strokeLinecap="round"
+                    />
+                    {(i === 0 || i === nVal || (nVal < 6) || (i % 2 === 0)) && (
+                      <text x={p.x + perpX * 12} y={-(p.y + perpY * 12) + 3} fill={pipeColor} fontSize="9" textAnchor="middle" fontWeight="bold">{i}</text>
+                    )}
+                  </g>
+                );
+              })}
               <g transform={`translate(${maxX/2}, ${minY/2})`}>
                 <text x="0" y="0" fill={dimColor} fontSize="10" fontWeight="bold" textAnchor="middle">R: {rVal}"</text>
               </g>
@@ -815,16 +835,16 @@ export default function App() {
                 <h2 className={`text-[11px] font-black uppercase tracking-widest ${themeConfig.accent}`}>Bending Lab</h2> 
               </div> 
               <div className="flex items-center gap-2"> 
-              <button onClick={resetTab} className={`p-2.5 ${themeConfig.card} rounded-full active:rotate-180 transition-transform duration-500 shadow-sm`}><RotateCcw size={16}/></button>
-                <button onClick={() => setIsLevelActive(true)} className={`p-2.5 ${themeConfig.card} rounded-full active:scale-90 shadow-sm`}><Scale size={16}/></button> 
-                <button onClick={() => saveProject(bendType.toUpperCase(), `H:${h}" A:${a}°`)} className={`p-2.5 ${themeConfig.accentBg} text-white rounded-full active:scale-90 transition-transform shadow-lg`}><Save size={16}/></button>
+              <button onClick={() => { vibrate(18); resetTab(); }} className={`p-2.5 ${themeConfig.card} rounded-full active:rotate-180 transition-transform duration-500 shadow-sm`}><RotateCcw size={16}/></button>
+                <button onClick={() => { vibrate(18); setIsLevelActive(true); }} className={`p-2.5 ${themeConfig.card} rounded-full active:scale-90 shadow-sm`}><Scale size={16}/></button> 
+                <button onClick={() => { vibrate(18); saveProject(bendType.toUpperCase(), `H:${h}" A:${a}°`); }} className={`p-2.5 ${themeConfig.accentBg} text-white rounded-full active:scale-90 transition-transform shadow-lg`}><Save size={16}/></button>
               </div> 
             </div> 
             <div className="relative mb-4"> 
               <div className="flex justify-center mb-2"> 
                 <div className={`flex ${themeConfig.tabBg} backdrop-blur-md p-1 rounded-full border border-white/20 overflow-x-auto max-w-full no-scrollbar shadow-xl`}> 
                   {[{id:'offset',icon:Compass,l:'Offset'},{id:'saddle3',icon:Move,l:'3pt'},{id:'saddle4',icon:Maximize2,l:'4pt'},{id:'roll',icon:RefreshCw,l:'Roll'},{id:'parallel',icon:Layers,l:'Conc.'},{id:'segmented',icon:CornerDownRight,l:'Seg.'}].map(item => ( 
-                    <button key={item.id} onClick={() => setBendType(item.id)} className={`flex items-center gap-1.5 ${settings.largeTargets ? 'px-5 py-3' : 'px-3 py-1.5'} rounded-full transition-all whitespace-nowrap ${bendType === item.id ? themeConfig.tabActive : 'text-slate-400'}`}><item.icon size={12}/><span className="text-[10px] font-black uppercase tracking-tight">{item.l}</span></button> 
+                    <button key={item.id} onClick={() => { vibrate(12); setBendType(item.id); }} className={`flex items-center gap-1.5 ${settings.largeTargets ? 'px-5 py-3' : 'px-3 py-1.5'} rounded-full transition-all whitespace-nowrap ${bendType === item.id ? themeConfig.tabActive : 'text-slate-400'}`}><item.icon size={12}/><span className="text-[10px] font-black uppercase tracking-tight">{item.l}</span></button> 
                   ))} 
                 </div> 
               </div> 
@@ -853,7 +873,7 @@ export default function App() {
               </div> 
             </div>
             <div className="mt-4 flex justify-center">
-              <button onClick={() => handleShare('BendIQ Calculation', getShareText())} className={`flex items-center gap-2 px-4 py-2 ${themeConfig.card} rounded-full shadow-md active:scale-95 transition-transform`}>
+              <button onClick={() => { vibrate(18); handleShare('BendIQ Calculation', getShareText()); }} className={`flex items-center gap-2 px-4 py-2 ${themeConfig.card} rounded-full shadow-md active:scale-95 transition-transform`}>
                 <Share2 size={14} className={themeConfig.accent} />
                 <span className={`text-[10px] font-black uppercase tracking-widest ${themeConfig.sub}`}>Share</span>
               </button>
@@ -871,15 +891,15 @@ export default function App() {
                 <h2 className={`text-[11px] font-black uppercase tracking-widest ${themeConfig.accent}`}>Conduit Load</h2> 
               </div> 
               <div className="flex items-center gap-2"> 
-              <button onClick={resetTab} className={`p-2.5 ${themeConfig.card} rounded-full active:rotate-180 transition-transform duration-500 shadow-sm`}><RotateCcw size={16}/></button> 
-                <button onClick={() => setIsLevelActive(true)} className={`p-2.5 ${themeConfig.card} rounded-full active:scale-90 shadow-sm`}><Scale size={16}/></button> 
-                <button onClick={() => saveProject("FILL", `${ct} ${cs}"`)} className={`p-2.5 ${themeConfig.accentBg} text-white rounded-full active:scale-90 transition-transform shadow-lg`}><Save size={16}/></button>
+              <button onClick={() => { vibrate(18); resetTab(); }} className={`p-2.5 ${themeConfig.card} rounded-full active:rotate-180 transition-transform duration-500 shadow-sm`}><RotateCcw size={16}/></button> 
+                <button onClick={() => { vibrate(18); setIsLevelActive(true); }} className={`p-2.5 ${themeConfig.card} rounded-full active:scale-90 shadow-sm`}><Scale size={16}/></button> 
+                <button onClick={() => { vibrate(18); saveProject("FILL", `${ct} ${cs}"`); }} className={`p-2.5 ${themeConfig.accentBg} text-white rounded-full active:scale-90 transition-transform shadow-lg`}><Save size={16}/></button>
               </div> 
             </div> 
             <div id="fill-visualizer"><Visualizer type="conduitFill" data={{ fill: fillPct }} theme={theme}/></div> 
             <div className="mt-4 grid grid-cols-4 gap-2 mb-4"> 
               {['14', '12', '10', '8'].map(g => ( 
-                <button key={g} onClick={() => addGauge(g)} className={`flex flex-col items-center justify-center p-3 rounded-2xl border ${themeConfig.card} hover:border-blue-500 transition-all active:scale-95 group shadow-sm`}> 
+                <button key={g} onClick={() => { vibrate(18); addGauge(g); }} className={`flex flex-col items-center justify-center p-3 rounded-2xl border ${themeConfig.card} hover:border-blue-500 transition-all active:scale-95 group shadow-sm`}> 
                   <Plus size={14} className={`${themeConfig.sub} group-hover:text-blue-500 mb-1`} /> 
                   <span className={`text-xs font-black ${themeConfig.text}`}>#{g}</span> 
                 </button> 
@@ -906,7 +926,7 @@ export default function App() {
               <div className={`mt-3 text-center text-[10px] font-black uppercase tracking-widest ${fillPct > 40 ? 'text-red-500 animate-pulse' : 'text-green-500 opacity-60'}`}>{fillPct > 40 ? 'Violation - Undersized' : 'COMPLIANT'}</div>
             </div>
             <div className="mt-4 flex justify-center">
-              <button onClick={() => handleShare('BendIQ Calculation', getShareText())} className={`flex items-center gap-2 px-4 py-2 ${themeConfig.card} rounded-full shadow-md active:scale-95 transition-transform`}>
+              <button onClick={() => { vibrate(18); handleShare('BendIQ Calculation', getShareText()); }} className={`flex items-center gap-2 px-4 py-2 ${themeConfig.card} rounded-full shadow-md active:scale-95 transition-transform`}>
                 <Share2 size={14} className={themeConfig.accent} />
                 <span className={`text-[10px] font-black uppercase tracking-widest ${themeConfig.sub}`}>Share</span>
               </button>
@@ -923,9 +943,9 @@ export default function App() {
                 <h2 className={`text-[11px] font-black uppercase tracking-widest ${themeConfig.accent}`}>Box Volume</h2> 
               </div> 
               <div className="flex items-center gap-2"> 
-              <button onClick={resetTab} className={`p-2.5 ${themeConfig.card} rounded-full active:rotate-180 transition-transform duration-500 shadow-sm`}><RotateCcw size={16}/></button>
-                <button onClick={() => setIsLevelActive(true)} className={`p-2.5 ${themeConfig.card} rounded-full active:scale-90 shadow-sm`}><Scale size={16}/></button> 
-                <button onClick={() => saveProject("BOX", BOX_DATA[selBox].label)} className={`p-2.5 ${themeConfig.accentBg} text-white rounded-full active:scale-90 transition-transform shadow-lg`}><Save size={16}/></button>
+              <button onClick={() => { vibrate(18); resetTab(); }} className={`p-2.5 ${themeConfig.card} rounded-full active:rotate-180 transition-transform duration-500 shadow-sm`}><RotateCcw size={16}/></button>
+                <button onClick={() => { vibrate(18); setIsLevelActive(true); }} className={`p-2.5 ${themeConfig.card} rounded-full active:scale-90 shadow-sm`}><Scale size={16}/></button> 
+                <button onClick={() => { vibrate(18); saveProject("BOX", BOX_DATA[selBox].label); }} className={`p-2.5 ${themeConfig.accentBg} text-white rounded-full active:scale-90 transition-transform shadow-lg`}><Save size={16}/></button>
               </div> 
             </div> 
             <div id="box-visualizer"><Visualizer type="boxFill" data={{ used: boxUsed, cap: boxCapValue }} theme={theme}/></div> 
@@ -941,7 +961,7 @@ export default function App() {
               <div className={`mt-3 text-center text-[10px] font-black uppercase tracking-widest ${boxUsed > boxCapValue ? 'text-red-500 animate-pulse' : 'text-green-500 opacity-60'}`}>{boxUsed > boxCapValue ? 'Violation - Undersized' : 'COMPLIANT'}</div>
             </div>
             <div className="mt-4 flex justify-center">
-              <button onClick={() => handleShare('BendIQ Calculation', getShareText())} className={`flex items-center gap-2 px-4 py-2 ${themeConfig.card} rounded-full shadow-md active:scale-95 transition-transform`}>
+              <button onClick={() => { vibrate(18); handleShare('BendIQ Calculation', getShareText()); }} className={`flex items-center gap-2 px-4 py-2 ${themeConfig.card} rounded-full shadow-md active:scale-95 transition-transform`}>
                 <Share2 size={14} className={themeConfig.accent} />
                 <span className={`text-[10px] font-black uppercase tracking-widest ${themeConfig.sub}`}>Share</span>
               </button>
@@ -954,7 +974,7 @@ export default function App() {
             <h2 className={`text-xl font-black ${themeConfig.text} uppercase tracking-tighter mb-6`}>Master Vault</h2> 
             {projs.length === 0 ? <div className="text-center py-20 text-slate-600 font-black uppercase tracking-widest text-[10px] opacity-40">Empty Archive</div> : ( 
               <div className="space-y-4">{projs.map(p => ( 
-                <div key={p.id} onClick={() => loadProject(p)} className={`${themeConfig.card} p-5 rounded-3xl flex justify-between items-center group cursor-pointer active:scale-98 shadow-md transition-all border hover:border-blue-500/50`}><div className="flex-1"><h4 className={`text-sm font-black ${themeConfig.text}`}>{p.t}</h4><p className={`text-[9px] ${themeConfig.sub} font-bold`}>{p.dt}</p></div><div className="flex items-center gap-2"><button onClick={(e)=>{e.stopPropagation(); handleShare(`BendIQ: ${p.t}`, `${p.t} - ${p.d} (${p.dt})`);}} className={`p-2 ${themeConfig.sub} hover:text-blue-400`}><Share2 size={16}/></button><button onClick={(e)=>{e.stopPropagation(); exportPDF(p);}} className={`p-2 ${themeConfig.sub} hover:text-blue-400 ${isExporting ? 'animate-pulse' : ''}`}>{isExporting ? <Loader2 size={18} className="animate-spin" /> : <FileText size={18}/>}</button><button onClick={(e)=>{e.stopPropagation(); setProjs(projs.filter(x=>x.id!==p.id));}} className={`p-2 ${themeConfig.sub} hover:text-red-500`}><Trash2 size={16}/></button></div></div> 
+                <div key={p.id} onClick={() => { vibrate(18); loadProject(p); }} className={`${themeConfig.card} p-5 rounded-3xl flex justify-between items-center group cursor-pointer active:scale-98 shadow-md transition-all border hover:border-blue-500/50`}><div className="flex-1"><h4 className={`text-sm font-black ${themeConfig.text}`}>{p.t}</h4><p className={`text-[9px] ${themeConfig.sub} font-bold`}>{p.dt}</p></div><div className="flex items-center gap-2"><button onClick={(e)=>{e.stopPropagation(); vibrate(18); handleShare(`BendIQ: ${p.t}`, `${p.t} - ${p.d} (${p.dt})`);}} className={`p-2 ${themeConfig.sub} hover:text-blue-400`}><Share2 size={16}/></button><button onClick={(e)=>{e.stopPropagation(); vibrate(18); exportPDF(p);}} className={`p-2 ${themeConfig.sub} hover:text-blue-400 ${isExporting ? 'animate-pulse' : ''}`}>{isExporting ? <Loader2 size={18} className="animate-spin" /> : <FileText size={18}/>}</button><button onClick={(e)=>{e.stopPropagation(); vibrate(18); setProjs(projs.filter(x=>x.id!==p.id));}} className={`p-2 ${themeConfig.sub} hover:text-red-500`}><Trash2 size={16}/></button></div></div> 
               ))}</div> 
             )}
           </div> 
@@ -967,13 +987,13 @@ export default function App() {
       <div className="w-full max-w-md mb-8 mt-2 flex items-center justify-between"> 
         <div><h1 className="text-2xl font-black italic">BEND<span className={themeConfig.accent}>IQ</span></h1><div className="flex items-center gap-1.5"><div className={`w-1.5 h-1.5 rounded-full ${themeConfig.accentBg} animate-pulse`}></div><p className={`${themeConfig.sub} text-[9px] font-black uppercase tracking-[0.4em]`}>Beta Version 0.1</p></div></div> 
         <div className="flex items-center gap-2"> 
-          <button onClick={toggleFlashlight} className={`w-9 h-9 ${themeConfig.card} border rounded-xl flex items-center justify-center shadow-lg active:scale-90 transition-transform ${flashlightOn ? 'bg-yellow-400 border-yellow-500 text-white' : ''}`}> 
+          <button onClick={() => { vibrate(18); toggleFlashlight(); }} className={`w-9 h-9 ${themeConfig.card} border rounded-xl flex items-center justify-center shadow-lg active:scale-90 transition-transform ${flashlightOn ? 'bg-yellow-400 border-yellow-500 text-white' : ''}`}> 
             <Flashlight size={18} className={flashlightOn ? 'text-white' : themeConfig.text} fill={flashlightOn ? "currentColor" : "none"} /> 
           </button> 
-          <button onClick={() => setShowSettings(true)} className={`w-9 h-9 ${themeConfig.card} border rounded-xl flex items-center justify-center shadow-lg active:scale-90 transition-transform`}> 
+          <button onClick={() => { vibrate(18); setShowSettings(true); }} className={`w-9 h-9 ${themeConfig.card} border rounded-xl flex items-center justify-center shadow-lg active:scale-90 transition-transform`}> 
             <Settings size={18} className={themeConfig.text} /> 
           </button> 
-          <button onClick={() => setTheme(theme==='dark'?'light':theme==='light'?'construction':'dark')} className={`w-9 h-9 ${themeConfig.card} border rounded-xl flex items-center justify-center shadow-lg active:scale-90 transition-transform`}> 
+          <button onClick={() => { vibrate(18); setTheme(theme==='dark'?'light':theme==='light'?'construction':'dark'); }} className={`w-9 h-9 ${themeConfig.card} border rounded-xl flex items-center justify-center shadow-lg active:scale-90 transition-transform`}> 
             {theme==='dark' ? <Sun size={18} className="text-yellow-400" /> : theme==='light' ? <HardHat size={18} className="text-yellow-500" /> : <Moon size={18} className="text-blue-400" />} 
           </button> 
         </div>
@@ -994,7 +1014,7 @@ export default function App() {
       )} 
       <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md h-20 ${theme === 'light' ? 'bg-slate-50 border-slate-200 shadow-xl' : 'bg-slate-900 border-white/5'} backdrop-blur-xl border rounded-[2.5rem] px-6 flex items-center justify-around z-50 shadow-2xl`}> 
         {[{id:'bending',icon:Move,l:'Bends'},{id:'cFill',icon:Download,l:'Conduit Fill'},{id:'bFill',icon:Package,l:'Box Fill'},{id:'projects',icon:FolderInput,l:'Vault'}].map(tab => ( 
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex flex-col items-center gap-1.5 transition-all relative ${activeTab === tab.id ? themeConfig.accent : (theme === 'light' ? 'text-slate-400' : 'text-slate-500')}`}> 
+          <button key={tab.id} onClick={() => { vibrate(12); setActiveTab(tab.id); }} className={`flex flex-col items-center gap-1.5 transition-all relative ${activeTab === tab.id ? themeConfig.accent : (theme === 'light' ? 'text-slate-400' : 'text-slate-500')}`}> 
             {activeTab === tab.id && <div className={`absolute -top-3 w-8 h-1 ${themeConfig.accentBg} rounded-full`}></div>} 
             <tab.icon size={20} strokeWidth={activeTab === tab.id ? 3 : 2} /> 
             <span className="text-[9px] font-black uppercase tracking-widest text-center leading-tight">{tab.l}</span> 
