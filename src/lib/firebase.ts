@@ -10,16 +10,31 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
+// Debug: Check if env variables are loaded
+console.log('Firebase config status:', {
+  hasApiKey: !!firebaseConfig.apiKey,
+  hasAuthDomain: !!firebaseConfig.authDomain,
+  hasProjectId: !!firebaseConfig.projectId,
+});
+
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
 let firebaseError: string | null = null;
 
-try {
-  app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  setPersistence(auth, browserLocalPersistence);
-} catch (error: any) {
-  firebaseError = error?.message || 'Failed to initialize Firebase';
+// Check if required config is present
+if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.projectId) {
+  firebaseError = 'Firebase configuration missing. Please check environment variables.';
+  console.error('Firebase config error:', firebaseError);
+} else {
+  try {
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    setPersistence(auth, browserLocalPersistence);
+    console.log('Firebase initialized successfully');
+  } catch (error: any) {
+    firebaseError = error?.message || 'Failed to initialize Firebase';
+    console.error('Firebase init error:', firebaseError);
+  }
 }
 
 export { auth, firebaseError };

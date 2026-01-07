@@ -6,8 +6,8 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
 } from "firebase/auth";
-import { auth } from "@/lib/firebase";
-import { Loader2, Mail, Lock, Chrome } from "lucide-react";
+import { auth, firebaseError } from "@/lib/firebase";
+import { Loader2, Mail, Lock, Chrome, AlertCircle } from "lucide-react";
 import { z } from "zod";
 
 // Zod schemas for validation
@@ -23,6 +23,27 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Show error if Firebase isn't available
+  if (!auth || firebaseError) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-5">
+        <div className="text-center max-w-sm">
+          <AlertCircle size={48} className="text-red-500 mx-auto mb-4" />
+          <h1 className="text-xl font-bold text-white mb-2">Authentication Unavailable</h1>
+          <p className="text-slate-400 text-sm mb-4">
+            {firebaseError || "Unable to connect to authentication service."}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Helper to map Firebase error codes to user-friendly messages
   const getErrorMessage = (code: string) => {
@@ -69,9 +90,9 @@ const Login: React.FC = () => {
 
     try {
       if (isLogin) {
-        await signInWithEmailAndPassword(auth, email, password);
+        await signInWithEmailAndPassword(auth!, email, password);
       } else {
-        await createUserWithEmailAndPassword(auth, email, password);
+        await createUserWithEmailAndPassword(auth!, email, password);
       }
       navigate("/");
     } catch (err: any) {
@@ -90,7 +111,7 @@ const Login: React.FC = () => {
 
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      await signInWithPopup(auth!, provider);
       navigate("/");
     } catch (err: any) {
       if (import.meta.env.DEV) {
