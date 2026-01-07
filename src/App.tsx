@@ -3,7 +3,7 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import {
   Compass, Maximize2, Layers, RefreshCw, Info,
   AlertCircle, ShieldCheck, Move, CornerDownRight, Save,
-  FolderInput, Trash2, Package, Download, X, Zap,
+  FolderInput, Trash2, Package, Download, X, Zap, Pencil,
   FileText, Loader2, Sun, Moon, HardHat, Plus, RotateCcw,
   Scale, CheckCircle2, Wand2, AlertTriangle, Settings, Mic, Type, MousePointerClick, Flashlight, Share2
 } from 'lucide-react';
@@ -512,6 +512,8 @@ export default function App() {
   const [isLevelActive, setIsLevelActive] = useState(false); 
   const [showSettings, setShowSettings] = useState(false);
   const [flashlightOn, setFlashlightOn] = useState(false);
+  const [renamingProject, setRenamingProject] = useState<number | null>(null);
+  const [renameValue, setRenameValue] = useState('');
   const streamRef = useRef(null);
   const [settings, setSettings] = useState({
     voice: false,
@@ -678,7 +680,20 @@ export default function App() {
   };
   const resetTab = useCallback(() => {
     if (activeTab === 'bending') {
-      setH(10); setA(30); setW(25); setR(100); setN(15); setOffsetR(10); setOffsetO(10); setS(1); setNumPipes(3);
+      // Reset based on current bend type with specific defaults
+      if (bendType === 'offset') {
+        setH(10); setA(30);
+      } else if (bendType === 'saddle3') {
+        setH(20); setA(45);
+      } else if (bendType === 'saddle4') {
+        setH(20); setW(25); setA(45);
+      } else if (bendType === 'roll') {
+        setOffsetR(10); setOffsetO(10); setA(30);
+      } else if (bendType === 'parallel') {
+        setS(1); setNumPipes(3); setA(60);
+      } else if (bendType === 'segmented') {
+        setN(15); setR(100); setA(90);
+      }
       setAutoAngle(true);
     } else if (activeTab === 'cFill') {
       setCt("EMT"); setCs("0.75"); setWires([{ s: '12', c: 3 }]);
@@ -687,7 +702,7 @@ export default function App() {
     }
     setToast({ s: true, m: "Inputs Reset" });
     setTimeout(() => setToast({ s: false, m: "" }), 2000);
-  }, [activeTab]);
+  }, [activeTab, bendType]);
   const saveProject = (t, d) => {
     const snapshot = { activeTab, bendType, h, a, mat, w, r, n, offsetR, offsetO, s, numPipes, ct, cs, wires, selBox, w14, w12, dev };
     setProjs([{ id: Date.now(), t, d, dt: new Date().toLocaleString(), snapshot }, ...projs]);
@@ -760,6 +775,11 @@ export default function App() {
                   <span className="text-sm text-blue-400 font-mono font-bold leading-none">{a}°</span>
                 </div>
               </div>
+              <div className="flex gap-2 flex-nowrap mb-2">
+                {[22.5, 30, 45, 90].map(angle => (
+                  <button key={angle} onClick={() => { vibrate(8); handleManualAngle(angle); }} className={`flex-1 py-1 px-2 text-[10px] font-bold rounded-full transition-all ${a === angle ? 'bg-blue-600 text-white' : 'bg-slate-700/50 text-slate-400 hover:bg-slate-600'}`}>{angle}°</button>
+                ))}
+              </div>
               <input type="range" min={10} max={90} step={1} value={a} onChange={(e) => handleManualAngle(e.target.value)} className={`w-full ${settings.largeTargets ? 'h-4' : 'h-1.5'} bg-slate-800 rounded-full appearance-none accent-blue-600 cursor-pointer shadow-inner mb-4`} />
               <Result label="Travel" value={format(travel)} unit='"' highlight theme={theme} settings={settings}/>
               <Result label="Shrinkage" value={format(shrink)} unit='"' theme={theme} settings={settings} isShrinkage={true}/>
@@ -779,8 +799,13 @@ export default function App() {
                   <button onClick={() => setAutoAngle(!autoAngle)} className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full transition-colors ${autoAngle ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-400'}`}> <Wand2 size={10} className="inline mr-1" />{autoAngle ? "Auto" : "Manual"}</button> 
                   <span className="text-sm text-blue-400 font-mono font-bold leading-none">{a}°</span> 
                 </div> 
-              </div> 
-              <input type="range" min={10} max={90} step={1} value={a} onChange={(e) => handleManualAngle(e.target.value)} className={`w-full ${settings.largeTargets ? 'h-4' : 'h-1.5'} bg-slate-800 rounded-full appearance-none accent-blue-600 cursor-pointer shadow-inner mb-4`} /> 
+              </div>
+              <div className="flex gap-2 flex-nowrap mb-2">
+                {[22.5, 30, 45, 90].map(angle => (
+                  <button key={angle} onClick={() => { vibrate(8); handleManualAngle(angle); }} className={`flex-1 py-1 px-2 text-[10px] font-bold rounded-full transition-all ${a === angle ? 'bg-blue-600 text-white' : 'bg-slate-700/50 text-slate-400 hover:bg-slate-600'}`}>{angle}°</button>
+                ))}
+              </div>
+              <input type="range" min={10} max={90} step={1} value={a} onChange={(e) => handleManualAngle(e.target.value)} className={`w-full ${settings.largeTargets ? 'h-4' : 'h-1.5'} bg-slate-800 rounded-full appearance-none accent-blue-600 cursor-pointer shadow-inner mb-4`} />
               <Result label="Center to Side" value={format(s3dist)} unit='"' highlight theme={theme} settings={settings}/>
               <Result label="Shrinkage" value={format(shrinkage3)} unit='"' theme={theme} settings={settings} isShrinkage={true}/>
             </> 
@@ -800,8 +825,13 @@ export default function App() {
                   <button onClick={() => setAutoAngle(!autoAngle)} className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full transition-colors ${autoAngle ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-400'}`}> <Wand2 size={10} className="inline mr-1" />{autoAngle ? "Auto" : "Manual"}</button> 
                   <span className="text-sm text-blue-400 font-mono font-bold leading-none">{a}°</span> 
                 </div> 
-              </div> 
-              <input type="range" min={5} max={60} step={1} value={a} onChange={(e) => handleManualAngle(e.target.value)} className={`w-full ${settings.largeTargets ? 'h-4' : 'h-1.5'} bg-slate-800 rounded-full appearance-none accent-blue-600 cursor-pointer shadow-inner mb-4`} /> 
+              </div>
+              <div className="flex gap-2 flex-nowrap mb-2">
+                {[22.5, 30, 45, 60].map(angle => (
+                  <button key={angle} onClick={() => { vibrate(8); handleManualAngle(angle); }} className={`flex-1 py-1 px-2 text-[10px] font-bold rounded-full transition-all ${a === angle ? 'bg-blue-600 text-white' : 'bg-slate-700/50 text-slate-400 hover:bg-slate-600'}`}>{angle}°</button>
+                ))}
+              </div>
+              <input type="range" min={5} max={60} step={1} value={a} onChange={(e) => handleManualAngle(e.target.value)} className={`w-full ${settings.largeTargets ? 'h-4' : 'h-1.5'} bg-slate-800 rounded-full appearance-none accent-blue-600 cursor-pointer shadow-inner mb-4`} />
               <Result label="Travel" value={format(s4travel)} unit='"' highlight theme={theme} settings={settings}/>
               <Result label="Shrinkage" value={format(shrinkage4)} unit='"' theme={theme} settings={settings} isShrinkage={true}/>
             </> 
@@ -969,16 +999,51 @@ export default function App() {
           </div> 
         ); 
       case 'projects': 
+        const handleRename = (id: number, newName: string) => {
+          setProjs(projs.map(p => p.id === id ? { ...p, t: newName } : p));
+          setRenamingProject(null);
+          setRenameValue('');
+          setToast({ s: true, m: "Project Renamed" });
+          setTimeout(() => setToast({ s: false, m: "" }), 2000);
+        };
         return ( 
           <div className="animate-in fade-in duration-500"> 
             <h2 className={`text-xl font-black ${themeConfig.text} uppercase tracking-tighter mb-6`}>Master Vault</h2> 
             {projs.length === 0 ? <div className="text-center py-20 text-slate-600 font-black uppercase tracking-widest text-[10px] opacity-40">Empty Archive</div> : ( 
               <div className="space-y-4">{projs.map(p => ( 
-                <div key={p.id} onClick={() => { vibrate(18); loadProject(p); }} className={`${themeConfig.card} p-5 rounded-3xl flex justify-between items-center group cursor-pointer active:scale-98 shadow-md transition-all border hover:border-blue-500/50`}><div className="flex-1"><h4 className={`text-sm font-black ${themeConfig.text}`}>{p.t}</h4><p className={`text-[9px] ${themeConfig.sub} font-bold`}>{p.dt}</p></div><div className="flex items-center gap-2"><button onClick={(e)=>{e.stopPropagation(); vibrate(18); handleShare(`BendIQ: ${p.t}`, `${p.t} - ${p.d} (${p.dt})`);}} className={`p-2 ${themeConfig.sub} hover:text-blue-400`}><Share2 size={16}/></button><button onClick={(e)=>{e.stopPropagation(); vibrate(18); exportPDF(p);}} className={`p-2 ${themeConfig.sub} hover:text-blue-400 ${isExporting ? 'animate-pulse' : ''}`}>{isExporting ? <Loader2 size={18} className="animate-spin" /> : <FileText size={18}/>}</button><button onClick={(e)=>{e.stopPropagation(); vibrate(18); setProjs(projs.filter(x=>x.id!==p.id));}} className={`p-2 ${themeConfig.sub} hover:text-red-500`}><Trash2 size={16}/></button></div></div> 
+                <div key={p.id} onClick={() => { if (renamingProject !== p.id) { vibrate(18); loadProject(p); } }} className={`${themeConfig.card} p-5 rounded-3xl flex justify-between items-center group cursor-pointer active:scale-98 shadow-md transition-all border hover:border-blue-500/50`}>
+                  <div className="flex-1">
+                    {renamingProject === p.id ? (
+                      <form onSubmit={(e) => { e.preventDefault(); handleRename(p.id, renameValue); }} className="flex items-center gap-2">
+                        <input 
+                          type="text" 
+                          value={renameValue} 
+                          onChange={(e) => setRenameValue(e.target.value)} 
+                          onClick={(e) => e.stopPropagation()}
+                          autoFocus
+                          className={`text-sm font-black ${themeConfig.text} bg-transparent border-b-2 border-blue-500 outline-none w-full`}
+                        />
+                        <button type="submit" onClick={(e) => e.stopPropagation()} className="p-1 text-green-500"><CheckCircle2 size={16}/></button>
+                        <button type="button" onClick={(e) => { e.stopPropagation(); setRenamingProject(null); setRenameValue(''); }} className="p-1 text-red-500"><X size={16}/></button>
+                      </form>
+                    ) : (
+                      <>
+                        <h4 className={`text-sm font-black ${themeConfig.text}`}>{p.t}</h4>
+                        <p className={`text-[9px] ${themeConfig.sub} font-bold`}>{p.dt}</p>
+                      </>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button onClick={(e)=>{e.stopPropagation(); vibrate(18); setRenamingProject(p.id); setRenameValue(p.t);}} className={`p-2 ${themeConfig.sub} hover:text-blue-400 rounded`}><Pencil size={16}/></button>
+                    <button onClick={(e)=>{e.stopPropagation(); vibrate(18); handleShare(`BendIQ: ${p.t}`, `${p.t} - ${p.d} (${p.dt})`);}} className={`p-2 ${themeConfig.sub} hover:text-blue-400 rounded`}><Share2 size={16}/></button>
+                    <button onClick={(e)=>{e.stopPropagation(); vibrate(18); exportPDF(p);}} className={`p-2 ${themeConfig.sub} hover:text-blue-400 rounded ${isExporting ? 'animate-pulse' : ''}`}>{isExporting ? <Loader2 size={18} className="animate-spin" /> : <FileText size={18}/>}</button>
+                    <button onClick={(e)=>{e.stopPropagation(); vibrate(18); setProjs(projs.filter(x=>x.id!==p.id));}} className={`p-2 ${themeConfig.sub} hover:text-red-500 rounded`}><Trash2 size={16}/></button>
+                  </div>
+                </div> 
               ))}</div> 
             )}
           </div> 
-        ); 
+        );
       default: return null; 
     } 
   }; 
