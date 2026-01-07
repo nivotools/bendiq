@@ -5,7 +5,8 @@ import {
   AlertCircle, ShieldCheck, Move, CornerDownRight, Save,
   FolderInput, Trash2, Package, Download, X, Zap, Pencil,
   FileText, Loader2, Sun, Moon, HardHat, Plus, RotateCcw, ZoomIn,
-  Scale, CheckCircle2, Wand2, AlertTriangle, Settings, Mic, Type, MousePointerClick, Flashlight, Share2
+  Scale, CheckCircle2, Wand2, AlertTriangle, Settings, Mic, Type, MousePointerClick, Flashlight, Share2,
+  Ruler, Eye, EyeOff, ChevronDown
 } from 'lucide-react';
 
 // Type declarations for external libraries and APIs
@@ -63,6 +64,30 @@ const CONDUIT_TYPES = {
   "EMT": { label: "EMT", springback: 0.05 },
   "IMC": { label: "IMC", springback: 0.03 },
   "RMC": { label: "Rigid", springback: 0.02 }
+};
+
+// Bender brand take-up values (inches) by conduit size
+const BENDER_DATA = {
+  "Generic": { 
+    label: "Generic/Standard", 
+    takeUp: { "0.5": 5, "0.75": 6, "1": 8, "1.25": 11, "1.5": 12, "2": 15 },
+    deduct: { "0.5": 5, "0.75": 6, "1": 8, "1.25": 11, "1.5": 12, "2": 15 }
+  },
+  "Ideal": { 
+    label: "Ideal", 
+    takeUp: { "0.5": 5, "0.75": 6, "1": 8, "1.25": 11, "1.5": 12, "2": 15 },
+    deduct: { "0.5": 5, "0.75": 6, "1": 8, "1.25": 11, "1.5": 12, "2": 15 }
+  },
+  "Klein": { 
+    label: "Klein", 
+    takeUp: { "0.5": 5, "0.75": 6, "1": 8, "1.25": 11, "1.5": 12, "2": 15 },
+    deduct: { "0.5": 5, "0.75": 6, "1": 8, "1.25": 11, "1.5": 12, "2": 15 }
+  },
+  "Greenlee": { 
+    label: "Greenlee", 
+    takeUp: { "0.5": 5, "0.75": 6, "1": 8, "1.25": 11, "1.5": 12, "2": 15.5 },
+    deduct: { "0.5": 5, "0.75": 6, "1": 8, "1.25": 11, "1.5": 12, "2": 15.5 }
+  }
 };
 
 const toRad = (deg) => (deg * Math.PI) / 180;
@@ -175,12 +200,14 @@ const SpringbackAdvisory = ({ angle, type, theme, bendType, n }) => {
     </div>
   ); 
 };
-const Visualizer = ({ type, data, isForExport = false, theme = 'dark' }) => { 
+const Visualizer = ({ type, data, isForExport = false, theme = 'dark', showMarkingGuide = false, benderType = 'Generic', bendSize = '0.75' }) => { 
   const [scale, setScale] = useState(1);
   const [translate, setTranslate] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const lastPosRef = useRef({ x: 0, y: 0 });
+  const initialPinchDistRef = useRef<number | null>(null);
+  const initialScaleRef = useRef<number>(1);
 
   const resetView = () => {
     setScale(1);
@@ -208,22 +235,53 @@ const Visualizer = ({ type, data, isForExport = false, theme = 'dark' }) => {
 
   const handleMouseUp = () => setIsDragging(false);
 
+  // Get distance between two touch points
+  const getTouchDistance = (touches: React.TouchList) => {
+    if (touches.length < 2) return 0;
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (e.touches.length === 1) {
+    if (e.touches.length === 2) {
+      // Pinch gesture start
+      initialPinchDistRef.current = getTouchDistance(e.touches);
+      initialScaleRef.current = scale;
+    } else if (e.touches.length === 1) {
       setIsDragging(true);
       lastPosRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     }
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging || e.touches.length !== 1) return;
-    const dx = e.touches[0].clientX - lastPosRef.current.x;
-    const dy = e.touches[0].clientY - lastPosRef.current.y;
-    setTranslate(prev => ({ x: prev.x + dx, y: prev.y + dy }));
-    lastPosRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    if (e.touches.length === 2 && initialPinchDistRef.current !== null) {
+      // Pinch-to-zoom
+      e.preventDefault();
+      const currentDist = getTouchDistance(e.touches);
+      const scaleChange = currentDist / initialPinchDistRef.current;
+      const newScale = Math.min(Math.max(initialScaleRef.current * scaleChange, 0.5), 4);
+      setScale(newScale);
+    } else if (isDragging && e.touches.length === 1) {
+      const dx = e.touches[0].clientX - lastPosRef.current.x;
+      const dy = e.touches[0].clientY - lastPosRef.current.y;
+      setTranslate(prev => ({ x: prev.x + dx, y: prev.y + dy }));
+      lastPosRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
   };
 
-  const handleTouchEnd = () => setIsDragging(false);
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (e.touches.length < 2) {
+      initialPinchDistRef.current = null;
+    }
+    if (e.touches.length === 0) {
+      setIsDragging(false);
+    }
+  };
+  
+  // Get take-up value for marking guide
+  const takeUp = BENDER_DATA[benderType]?.takeUp[bendSize] || 6;
+  const deduct = BENDER_DATA[benderType]?.deduct[bendSize] || 6;
 
   const geometry = useMemo(() => { 
     const getVal = (v, def=0) => isNaN(parseFloat(v)) ? def : parseFloat(v); 
@@ -469,6 +527,49 @@ const Visualizer = ({ type, data, isForExport = false, theme = 'dark' }) => {
               </g>
             ))}
             {geometry.dims}
+            
+            {/* Marking Guide Overlay */}
+            {showMarkingGuide && geometry.pts && geometry.pts.length >= 2 && (
+              <g className="marking-guide">
+                {/* Tape measure anchor at start of pipe */}
+                <g transform={`translate(${geometry.pts[0].x - 15}, ${-geometry.pts[0].y})`}>
+                  <rect x="-12" y="-8" width="24" height="16" rx="3" fill="#10b981" fillOpacity="0.9" />
+                  <text x="0" y="4" fill="white" fontSize="8" textAnchor="middle" fontWeight="bold">📍 0"</text>
+                </g>
+                
+                {/* Pencil marks at bend points */}
+                {geometry.marks?.map((m, i) => (
+                  <g key={`mark-${i}`}>
+                    {/* Tick mark on pipe */}
+                    <line 
+                      x1={m.x} y1={-m.y - 12} 
+                      x2={m.x} y2={-m.y + 12} 
+                      stroke="#ef4444" strokeWidth="2" strokeLinecap="round"
+                    />
+                    {/* Pencil icon */}
+                    <g transform={`translate(${m.x}, ${-m.y - 25})`}>
+                      <rect x="-18" y="-10" width="36" height="20" rx="4" fill="#ef4444" fillOpacity="0.9" />
+                      <text x="0" y="4" fill="white" fontSize="7" textAnchor="middle" fontWeight="bold">✏️ MARK</text>
+                    </g>
+                  </g>
+                ))}
+                
+                {/* Deduction/Shrinkage bracket */}
+                {type === 'offset' && (
+                  <g>
+                    <line 
+                      x1={geometry.pts[0].x} y1={-geometry.pts[0].y + 25} 
+                      x2={geometry.pts[0].x + takeUp} y2={-geometry.pts[0].y + 25} 
+                      stroke="#f59e0b" strokeWidth="2" 
+                    />
+                    <line x1={geometry.pts[0].x} y1={-geometry.pts[0].y + 20} x2={geometry.pts[0].x} y2={-geometry.pts[0].y + 30} stroke="#f59e0b" strokeWidth="2" />
+                    <line x1={geometry.pts[0].x + takeUp} y1={-geometry.pts[0].y + 20} x2={geometry.pts[0].x + takeUp} y2={-geometry.pts[0].y + 30} stroke="#f59e0b" strokeWidth="2" />
+                    <rect x={geometry.pts[0].x + takeUp/2 - 22} y={-geometry.pts[0].y + 32} width="44" height="16" rx="3" fill="#f59e0b" />
+                    <text x={geometry.pts[0].x + takeUp/2} y={-geometry.pts[0].y + 43} fill="white" fontSize="7" textAnchor="middle" fontWeight="bold">Take-up: {takeUp}"</text>
+                  </g>
+                )}
+              </g>
+            )}
           </g>
         )}
       </svg>
@@ -636,6 +737,8 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [flashlightOn, setFlashlightOn] = useState(false);
   const [renameProject, setRenameProject] = useState(null);
+  const [benderType, setBenderType] = useState('Generic');
+  const [showMarkingGuide, setShowMarkingGuide] = useState(false);
   const streamRef = useRef(null);
   const [settings, setSettings] = useState({
     voice: false,
@@ -979,8 +1082,33 @@ export default function App() {
                     <button key={item.id} onClick={() => { vibrate(12); setBendType(item.id); }} className={`flex items-center gap-1.5 ${settings.largeTargets ? 'px-5 py-3' : 'px-3 py-1.5'} rounded-full transition-all whitespace-nowrap ${bendType === item.id ? themeConfig.tabActive : 'text-slate-400'}`}><item.icon size={12}/><span className="text-[10px] font-black uppercase tracking-tight">{item.l}</span></button> 
                   ))} 
                 </div> 
+              </div>
+              {/* Marking Guide Toggle */}
+              <div className="flex justify-center mb-2">
+                <button 
+                  onClick={() => { vibrate(18); setShowMarkingGuide(!showMarkingGuide); }}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all ${
+                    showMarkingGuide 
+                      ? 'bg-green-500 text-white shadow-lg' 
+                      : `${themeConfig.card} ${themeConfig.text}`
+                  }`}
+                >
+                  {showMarkingGuide ? <Eye size={14} /> : <EyeOff size={14} />}
+                  <span className="text-[10px] font-black uppercase tracking-wide">
+                    {showMarkingGuide ? 'Marking Guide ON' : 'Show Marking Guide'}
+                  </span>
+                </button>
+              </div>
+              <div id="bending-visualizer">
+                <Visualizer 
+                  type={bendType} 
+                  data={visData} 
+                  theme={theme} 
+                  showMarkingGuide={showMarkingGuide}
+                  benderType={benderType}
+                  bendSize={bendSize}
+                />
               </div> 
-              <div id="bending-visualizer"><Visualizer type={bendType} data={visData} theme={theme}/></div> 
             </div> 
             <div className="grid grid-cols-2 gap-2 mb-4 items-end"> 
               <div className={`grid grid-cols-3 gap-1 ${themeConfig.tabBg} p-1 rounded-xl`}> 
@@ -990,7 +1118,31 @@ export default function App() {
                 <label className={`text-[8px] font-black uppercase tracking-widest ${themeConfig.sub} text-center`}>Select conduit size</label> 
                 <select className={`${themeConfig.inset} text-[10px] font-black p-1.5 rounded-xl outline-none appearance-none border-none text-center ${themeConfig.text}`} value={bendSize} onChange={(e)=>setBendSize(e.target.value)}>{['0.5','0.75','1','1.25','1.5','2','2.5','3'].map(s=><option key={s} value={s}>{s}"</option>)}</select> 
               </div> 
-            </div> 
+            </div>
+            {/* Bender Selector */}
+            <div className={`mb-4 p-3 ${themeConfig.card} rounded-2xl`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Ruler size={14} className={themeConfig.accent} />
+                  <label className={`text-[10px] font-black uppercase tracking-widest ${themeConfig.sub}`}>Bender Type</label>
+                </div>
+                <div className="relative">
+                  <select 
+                    className={`${themeConfig.inset} text-[11px] font-bold pl-3 pr-8 py-2 rounded-xl outline-none appearance-none border ${themeConfig.text} cursor-pointer`}
+                    value={benderType}
+                    onChange={(e) => { vibrate(12); setBenderType(e.target.value); }}
+                  >
+                    {Object.entries(BENDER_DATA).map(([key, val]) => (
+                      <option key={key} value={key}>{val.label}</option>
+                    ))}
+                  </select>
+                  <ChevronDown size={14} className={`absolute right-2 top-1/2 -translate-y-1/2 ${themeConfig.sub} pointer-events-none`} />
+                </div>
+              </div>
+              <div className={`mt-2 text-[9px] ${themeConfig.sub} text-center`}>
+                Take-up for {bendSize}" conduit: <span className={`font-black ${themeConfig.accent}`}>{BENDER_DATA[benderType]?.takeUp[bendSize] || 'N/A'}"</span>
+              </div>
+            </div>
             <div className={`${themeConfig.card} p-6 rounded-3xl shadow-lg`}> 
               {resultNode} 
               <WarningBox warnings={warnings} theme={theme}/> 
