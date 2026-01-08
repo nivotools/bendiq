@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useAuth } from "@/contexts/AuthContext";
 import bendiqLogo from "@/assets/bendiq-logo.png";
 
 // Type declarations for external libraries and APIs
@@ -506,7 +507,8 @@ const SettingsModal = ({ onClose, onClear, onDelete, settings, setSettings, them
 };
 
 export default function App() { 
-  const [activeTab, setActiveTab] = useState('bending'); 
+  const { logout } = useAuth();
+  const [activeTab, setActiveTab] = useState('bending');
   const [bendType, setBendType] = useState('offset'); 
   const [theme, setTheme] = useState('dark'); 
   const [projs, setProjs] = useState([]); 
@@ -560,6 +562,13 @@ export default function App() {
     };
   }, [theme]);
   const appStyle = settings.dyslexic ? { fontFamily: 'Verdana, Geneva, sans-serif', letterSpacing: '0.05em' } : {};
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
   const toggleFlashlight = async () => {
     if (flashlightOn) {
       if (streamRef.current) {
@@ -1055,7 +1064,7 @@ export default function App() {
   return ( 
     <div style={appStyle} className={`min-h-screen ${themeConfig.bg} ${themeConfig.text} overflow-x-hidden p-5 pb-32 flex flex-col items-center transition-colors duration-300`}> 
       <div className="w-full max-w-md mb-8 mt-2 flex items-center justify-between"> 
-        <div className="flex items-center gap-3"><img src={bendiqLogo} alt="BendIQ Logo" className="w-10 h-10 object-contain" /><div><h1 className="text-2xl font-black font-sans">BEND<span style={{ color: '#3C83F6' }}>IQ</span></h1><div className="flex items-center gap-1.5"><div className={`w-1.5 h-1.5 rounded-full ${themeConfig.accentBg} animate-pulse`}></div><p className={`${themeConfig.sub} text-[9px] font-black uppercase tracking-[0.4em]`}>Beta Version 0.1</p></div></div></div> 
+        <div className="flex items-center gap-3"><img src={bendiqLogo} alt="BendIQ Logo" className="w-12 h-12 object-contain" /><div><h1 className="text-2xl font-black font-sans">BEND<span style={{ color: '#3C83F6' }}>IQ</span></h1><div className="flex items-center gap-1.5"><div className={`w-1.5 h-1.5 rounded-full ${themeConfig.accentBg} animate-pulse`}></div><p className={`${themeConfig.sub} text-[9px] font-black uppercase tracking-[0.4em]`}>Beta Version 0.1</p></div></div></div> 
         <div className="flex items-center gap-2"> 
           <button onClick={() => { vibrate(18); toggleFlashlight(); }} className={`w-9 h-9 ${themeConfig.card} border rounded-xl flex items-center justify-center shadow-lg active:scale-90 transition-transform ${flashlightOn ? 'bg-yellow-400 border-yellow-500 text-white' : ''}`}> 
             <Flashlight size={18} className={flashlightOn ? 'text-white' : themeConfig.text} fill={flashlightOn ? "currentColor" : "none"} /> 
@@ -1073,7 +1082,7 @@ export default function App() {
         <div className="w-full mt-8 flex justify-center gap-6 pb-4"> 
           <button onClick={() => setShowImprint(true)} className={`text-[10px] font-bold ${themeConfig.sub} hover:${themeConfig.text} transition-colors`}>Imprint</button> 
           <button onClick={() => setShowPrivacy(true)} className={`text-[10px] font-bold ${themeConfig.sub} hover:${themeConfig.text} transition-colors`}>Privacy Policy</button>
-          <button className={`text-[10px] font-bold ${themeConfig.sub} hover:${themeConfig.text} transition-colors`}>Log Out</button> 
+          <button onClick={() => handleLogout()} className={`text-[10px] font-bold ${themeConfig.sub} hover:${themeConfig.text} transition-colors`}>Log Out</button> 
         </div>
         
         <Dialog open={showImprint} onOpenChange={setShowImprint}>
