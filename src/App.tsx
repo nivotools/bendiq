@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import bendiqLogo from "@/assets/bendiq-logo.png";
 import bendiqLogoPdf from "@/assets/bendiq-logo-pdf.png";
@@ -798,26 +799,29 @@ export default function App() {
       
       // Helper function to add header with logos
       const addHeader = async () => {
-        // Light gray header bar (no blue)
-        doc.setFillColor(241, 245, 249); // slate-100
+        // Dark header bar (#0B111E)
+        doc.setFillColor(11, 17, 30); // #0B111E
         doc.rect(0, 0, pageWidth, 35, 'F');
         
-        // Add logos
+        // Add logos with proper aspect ratios
         try {
-          // Logo - left side
-          doc.addImage(bendiqLogoPdf, 'PNG', margin, 5, 25, 25);
-          // Text logo - next to the logo
-          doc.addImage(bendiqTextPdf, 'PNG', margin + 28, 8, 50, 18);
+          // Logo - left side (square logo, keeping natural aspect ratio)
+          const logoSize = 20;
+          doc.addImage(bendiqLogoPdf, 'PNG', margin, 7.5, logoSize, logoSize);
+          // Text logo - next to the logo (wider aspect ratio ~3:1)
+          const textWidth = 60;
+          const textHeight = 20;
+          doc.addImage(bendiqTextPdf, 'PNG', margin + logoSize + 5, 7.5, textWidth, textHeight);
         } catch (imgErr) {
           // Fallback to text if images fail
-          doc.setTextColor(37, 99, 235);
+          doc.setTextColor(255, 255, 255);
           doc.setFontSize(24);
           doc.setFont('helvetica', 'bold');
           doc.text('BENDIQ', margin, 22);
         }
         
-        // Date on right side
-        doc.setTextColor(100, 116, 139); // slate-500
+        // Date on right side (white text for dark background)
+        doc.setTextColor(255, 255, 255);
         doc.setFontSize(9);
         doc.text(p.dt, pageWidth - margin, 20, { align: 'right' });
         
@@ -1193,9 +1197,27 @@ export default function App() {
             </div> 
             <div className={`${themeConfig.card} p-5 rounded-3xl mb-4 shadow-lg`}> 
               <div className="flex gap-2 mb-6"> 
-                <select className={`${themeConfig.inset} text-xs flex-1 p-3 rounded-xl outline-none appearance-none border-none ${themeConfig.text}`} value={ct} onChange={(e)=>setCt(e.target.value)}>{Object.keys(CONDUIT_DATA).map(k=><option key={k} value={k}>{k}</option>)}</select> 
-                <select className={`${themeConfig.inset} text-xs flex-1 p-3 rounded-xl outline-none appearance-none border-none ${themeConfig.text}`} value={cs} onChange={(e)=>setCs(e.target.value)}>{Object.keys(CONDUIT_DATA[ct]).map(k=><option key={k} value={k}>{k}"</option>)}</select> 
-              </div> 
+                <Select value={ct} onValueChange={setCt}>
+                  <SelectTrigger className={`flex-1 h-12 rounded-2xl border-0 ${themeConfig.inset} ${themeConfig.text} text-xs font-bold`}>
+                    <SelectValue placeholder="Type" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-slate-700 rounded-xl">
+                    {Object.keys(CONDUIT_DATA).map(k => (
+                      <SelectItem key={k} value={k} className="text-white hover:bg-slate-800 focus:bg-slate-800 rounded-lg cursor-pointer">{k}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={cs} onValueChange={setCs}>
+                  <SelectTrigger className={`flex-1 h-12 rounded-2xl border-0 ${themeConfig.inset} ${themeConfig.text} text-xs font-bold`}>
+                    <SelectValue placeholder="Size" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-slate-700 rounded-xl">
+                    {Object.keys(CONDUIT_DATA[ct]).map(k => (
+                      <SelectItem key={k} value={k} className="text-white hover:bg-slate-800 focus:bg-slate-800 rounded-lg cursor-pointer">{k}"</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="space-y-3"> 
                 {wires.map((w,i)=>( 
                   <div key={i} className={`flex gap-3 items-center p-3 rounded-2xl border ${themeConfig.inset} animate-in slide-in-from-left-2 duration-200`}> 
