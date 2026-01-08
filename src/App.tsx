@@ -805,14 +805,13 @@ export default function App() {
         
         // Add logos with proper aspect ratios
         try {
-          // Logo - left side (slimmer width, keeping height)
-          const logoWidth = 15;
-          const logoHeight = 20;
-          doc.addImage(bendiqLogoPdf, 'PNG', margin, 7.5, logoWidth, logoHeight);
+          // Logo - left side (square logo, keeping natural aspect ratio)
+          const logoSize = 20;
+          doc.addImage(bendiqLogoPdf, 'PNG', margin, 7.5, logoSize, logoSize);
           // Text logo - next to the logo (wider aspect ratio ~3:1)
           const textWidth = 60;
           const textHeight = 20;
-          doc.addImage(bendiqTextPdf, 'PNG', margin + logoWidth + 5, 7.5, textWidth, textHeight);
+          doc.addImage(bendiqTextPdf, 'PNG', margin + logoSize + 5, 7.5, textWidth, textHeight);
         } catch (imgErr) {
           // Fallback to text if images fail
           doc.setTextColor(255, 255, 255);
@@ -1287,7 +1286,7 @@ export default function App() {
         };
         return ( 
           <div className="animate-in fade-in duration-500"> 
-            <h2 className={`text-xl font-black ${themeConfig.text} uppercase tracking-tighter mb-6`}>PROJECTS</h2> 
+            <h2 className={`text-xl font-black ${themeConfig.text} uppercase tracking-tighter mb-6`}>Master Vault</h2> 
             {projs.length === 0 ? <div className="text-center py-20 text-slate-600 font-black uppercase tracking-widest text-[10px] opacity-40">Empty Archive</div> : ( 
               <div className="space-y-4">{projs.map(p => ( 
                 <div key={p.id} onClick={() => { if (renamingProject !== p.id) { vibrate(18); loadProject(p); } }} className={`${themeConfig.card} p-5 rounded-3xl flex justify-between items-center group cursor-pointer active:scale-98 shadow-md transition-all border hover:border-blue-500/50`}>
@@ -1453,7 +1452,7 @@ export default function App() {
           {id:'bending',icon:Move,l:'Bends'},
           {id:'cFill',icon:null,l:'Conduit Fill', customIcon: (active: boolean) => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 3 : 2}><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/></svg>},
           {id:'bFill',icon:Package,l:'Box Fill'},
-          {id:'projects',icon:FolderInput,l:'Projects'}
+          {id:'projects',icon:FolderInput,l:'Vault'}
         ].map(tab => ( 
           <button key={tab.id} onClick={() => { vibrate(12); setActiveTab(tab.id); }} className={`flex flex-col items-center gap-1.5 transition-all relative ${activeTab === tab.id ? themeConfig.accent : (theme === 'light' ? 'text-slate-400' : 'text-slate-500')}`}> 
             {activeTab === tab.id && <div className={`absolute -top-3 w-8 h-1 ${themeConfig.accentBg} rounded-full`}></div>} 
