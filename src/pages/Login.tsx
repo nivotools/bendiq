@@ -117,7 +117,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col items-center justify-center p-6 font-sans">
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 font-sans" style={{ backgroundColor: '#0B111E' }}>
       <div className="w-full max-w-sm">
         {/* Logo and Welcome */}
         <div className="text-center mb-8">
@@ -130,8 +130,8 @@ const Login = () => {
           <h1 className="text-3xl font-bold text-white font-sans tracking-wide">
             BEND<span style={{ color: '#3C83F6' }}>IQ</span>
           </h1>
-          <p className="text-slate-500 text-xs mt-2" style={{ fontFamily: 'Georgia, serif' }}>
-            professional conduit bending
+          <p className="text-slate-500 mt-2 uppercase" style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", fontSize: '12px', fontWeight: 500 }}>
+            PROFESSIONAL CONDUIT BENDING
           </p>
         </div>
 
@@ -178,7 +178,7 @@ const Login = () => {
                     id="remember" 
                     checked={rememberMe}
                     onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                    className="border-white/20 data-[state=checked]:bg-blue-600"
+                    className="border-white/20 data-[state=checked]:bg-blue-600 rounded-md"
                   />
                   <Label htmlFor="remember" className="text-slate-400 text-xs font-sans cursor-pointer">
                     Remember me
