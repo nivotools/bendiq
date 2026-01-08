@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import App from "./App.tsx";
 import Login from "./pages/Login.tsx";
+import CookieConsent from "./components/CookieConsent.tsx";
+import AnalyticsWrapper from "./components/AnalyticsWrapper.tsx";
 import "./index.css";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -54,7 +56,16 @@ const AppRoutes = () => {
 createRoot(document.getElementById("root")!).render(
   <BrowserRouter>
     <AuthProvider>
-      <AppRoutes />
+      {/* AnalyticsWrapper loads tracking scripts only when consent is given */}
+      {/* Replace the IDs below with your actual Google Analytics and Meta Pixel IDs */}
+      <AnalyticsWrapper 
+        googleAnalyticsId="G-XXXXXXXXXX"
+        metaPixelId="YOUR_PIXEL_ID"
+      >
+        <AppRoutes />
+        {/* Cookie consent banner - shown on all pages */}
+        <CookieConsent />
+      </AnalyticsWrapper>
     </AuthProvider>
   </BrowserRouter>
 );
