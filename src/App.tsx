@@ -291,25 +291,23 @@ const Visualizer = ({ type, data, isForExport = false, theme = 'dark' }) => {
           pts.push({
             x: rVal * Math.sin(theta),
             y: rVal - (rVal * Math.cos(theta)),
-            angle: theta // Store angle for perpendicular hash marks
+            angle: theta
           });
         }
         const pathData = pts.map((p, i) => (i===0 ? `M ${p.x} ${-p.y}` : `L ${p.x} ${-p.y}`)).join(" ");
         const maxX = pts[pts.length-1].x;
         const minY = -pts[pts.length-1].y;
         const pad = 50;
-        const hashLength = 6; // Length of hash mark
+        const hashLength = 6;
         return {
           custom: (
             <g>
               <path d={pathData} fill="none" stroke={pipeColor} strokeWidth="3" strokeLinecap="round" />
               {pts.map((p,i) => {
-                // Calculate perpendicular direction for hash marks (tangent is perpendicular to radius)
-                const perpX = Math.cos(p.angle); // Perpendicular to curve (tangent direction)
+                const perpX = Math.cos(p.angle);
                 const perpY = Math.sin(p.angle);
                 return (
                   <g key={i}>
-                    {/* Hash mark: line perpendicular to the curve */}
                     <line 
                       x1={p.x - perpX * hashLength} 
                       y1={-(p.y - perpY * hashLength)} 
@@ -319,9 +317,6 @@ const Visualizer = ({ type, data, isForExport = false, theme = 'dark' }) => {
                       strokeWidth="2" 
                       strokeLinecap="round"
                     />
-                    {(i === 0 || i === nVal || (nVal < 6) || (i % 2 === 0)) && (
-                      <text x={p.x + perpX * 12} y={-(p.y + perpY * 12) + 3} fill={pipeColor} fontSize="9" textAnchor="middle" fontWeight="bold">{i}</text>
-                    )}
                   </g>
                 );
               })}
@@ -388,8 +383,15 @@ const Visualizer = ({ type, data, isForExport = false, theme = 'dark' }) => {
           <path d={getRoundedPath(geometry.pts)} fill="none" stroke={theme === 'construction' ? '#facc15' : '#2563eb'} strokeWidth="5" strokeLinecap="round" />
           {geometry.marks?.map((m,i) => (
             <g key={i}>
-              <circle cx={m.x} cy={-m.y} r="2" fill="white" stroke={theme === 'construction' ? '#facc15' : '#2563eb'} strokeWidth="1" />
-              <text x={m.x} y={-m.y + 2} fill={theme === 'construction' ? '#facc15' : '#2563eb'} fontSize="10" textAnchor="middle" fontWeight="bold">{m.l}</text>
+              <line 
+                x1={m.x - 6} 
+                y1={-m.y} 
+                x2={m.x + 6} 
+                y2={-m.y} 
+                stroke={theme === 'construction' ? '#facc15' : '#2563eb'} 
+                strokeWidth="2" 
+                strokeLinecap="round"
+              />
             </g>
           ))}
           {geometry.dims}
@@ -645,19 +647,41 @@ export default function App() {
     }
     return warnings;
   }, [h, a]);
-  // Share functionality
+  // Native mobile share functionality with Web Share API and clipboard fallback
   const handleShare = async (title: string, text: string) => {
-    const shareData = { title, text, url: window.location.href };
+    const shareData = { 
+      title, 
+      text, 
+      url: window.location.href 
+    };
+    
     try {
-      if (navigator.share) {
+      // Check if Web Share API is supported (mobile browsers)
+      if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+        await navigator.share(shareData);
+      } else if (navigator.share) {
+        // Some browsers support share but not canShare
         await navigator.share(shareData);
       } else {
-        await navigator.clipboard.writeText(`${title}\n${text}\n${window.location.href}`);
-        setToast({ s: true, m: "Copied to Clipboard" });
+        // Fallback: Copy to clipboard for desktop browsers
+        const shareText = `${title}\n${text}\n${window.location.href}`;
+        await navigator.clipboard.writeText(shareText);
+        setToast({ s: true, m: "Link copied!" });
         setTimeout(() => setToast({ s: false, m: "" }), 2000);
       }
-    } catch (err) {
-      console.error('Share failed:', err);
+    } catch (err: any) {
+      // If user cancelled share, don't show error
+      if (err.name !== 'AbortError') {
+        // Fallback to clipboard if share fails
+        try {
+          const shareText = `${title}\n${text}\n${window.location.href}`;
+          await navigator.clipboard.writeText(shareText);
+          setToast({ s: true, m: "Link copied!" });
+          setTimeout(() => setToast({ s: false, m: "" }), 2000);
+        } catch (clipboardErr) {
+          console.error('Share and clipboard failed:', clipboardErr);
+        }
+      }
     }
   };
   const getShareText = () => {
