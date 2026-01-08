@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/contexts/AuthContext";
 import bendiqLogo from "@/assets/bendiq-logo.png";
+import bendiqLogoPdf from "@/assets/bendiq-logo-pdf.png";
+import bendiqTextPdf from "@/assets/bendiq-text.png";
 
 // Type declarations for external libraries and APIs
 declare global {
@@ -592,10 +594,13 @@ export default function App() {
         await track.applyConstraints({ advanced: [{ torch: true } as any] });
         streamRef.current = stream;
         setFlashlightOn(true);
-      } catch (err) {
+      } catch (err: any) {
         console.error(err);
-        setToast({ s: true, m: "Camera/Flash Error" });
-        setTimeout(() => setToast({ s: false, m: "" }), 2000);
+        // Only show error if it's not a user cancellation
+        if (err.name !== 'NotAllowedError' && err.name !== 'AbortError') {
+          setToast({ s: true, m: "FLASHLIGHT ERROR" });
+          setTimeout(() => setToast({ s: false, m: "" }), 2000);
+        }
       }
     }
   };
@@ -791,30 +796,30 @@ export default function App() {
       const contentWidth = pageWidth - (margin * 2);
       let yPos = margin;
       
-      // Helper function to add gradient header
-      const addHeader = () => {
-        // Blue gradient header bar
-        doc.setFillColor(37, 99, 235); // blue-600
+      // Helper function to add header with logos
+      const addHeader = async () => {
+        // Light gray header bar (no blue)
+        doc.setFillColor(241, 245, 249); // slate-100
         doc.rect(0, 0, pageWidth, 35, 'F');
         
-        // Secondary gradient overlay
-        doc.setFillColor(59, 130, 246); // blue-500
-        doc.rect(0, 0, pageWidth, 25, 'F');
-        
-        // Logo/Title
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(24);
-        doc.setFont('helvetica', 'bold');
-        doc.text('BENDIQ', margin, 18);
-        
-        // Subtitle
-        doc.setFontSize(8);
-        doc.setFont('helvetica', 'normal');
-        doc.text('PROFESSIONAL CONDUIT BENDING', margin, 25);
+        // Add logos
+        try {
+          // Logo - left side
+          doc.addImage(bendiqLogoPdf, 'PNG', margin, 5, 25, 25);
+          // Text logo - next to the logo
+          doc.addImage(bendiqTextPdf, 'PNG', margin + 28, 8, 50, 18);
+        } catch (imgErr) {
+          // Fallback to text if images fail
+          doc.setTextColor(37, 99, 235);
+          doc.setFontSize(24);
+          doc.setFont('helvetica', 'bold');
+          doc.text('BENDIQ', margin, 22);
+        }
         
         // Date on right side
+        doc.setTextColor(100, 116, 139); // slate-500
         doc.setFontSize(9);
-        doc.text(p.dt, pageWidth - margin, 18, { align: 'right' });
+        doc.text(p.dt, pageWidth - margin, 20, { align: 'right' });
         
         yPos = 45;
       };
@@ -861,7 +866,7 @@ export default function App() {
       };
       
       // Start building PDF
-      addHeader();
+      await addHeader();
       
       // Project title section
       doc.setFillColor(37, 99, 235);
@@ -1114,9 +1119,19 @@ export default function App() {
             <div className="relative mb-4"> 
               <div className="flex justify-center mb-2"> 
                 <div className={`flex ${themeConfig.tabBg} backdrop-blur-md p-1 rounded-full border border-white/20 overflow-x-auto max-w-full no-scrollbar shadow-xl`}> 
-                  {[{id:'offset',icon:Compass,l:'Offset'},{id:'saddle3',icon:Move,l:'3pt'},{id:'saddle4',icon:Maximize2,l:'4pt'},{id:'roll',icon:RefreshCw,l:'Roll'},{id:'parallel',icon:Layers,l:'Conc.'},{id:'segmented',icon:CornerDownRight,l:'Seg.'}].map(item => ( 
-                    <button key={item.id} onClick={() => { vibrate(12); setBendType(item.id); }} className={`flex items-center gap-1.5 ${settings.largeTargets ? 'px-5 py-3' : 'px-3 py-1.5'} rounded-full transition-all whitespace-nowrap ${bendType === item.id ? themeConfig.tabActive : 'text-slate-400'}`}><item.icon size={12}/><span className="text-[10px] font-black uppercase tracking-tight">{item.l}</span></button> 
-                  ))} 
+                  {[
+                    {id:'offset',icon:Compass,l:'Offset'},
+                    {id:'saddle3',icon:null,l:'3pt', customIcon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="6" r="2"/><circle cx="18" cy="12" r="2"/><path d="M8 12h4M14 8.5l2 3.5"/></svg>},
+                    {id:'saddle4',icon:null,l:'4pt', customIcon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="4" cy="14" r="2"/><circle cx="10" cy="6" r="2"/><circle cx="14" cy="6" r="2"/><circle cx="20" cy="14" r="2"/></svg>},
+                    {id:'roll',icon:RefreshCw,l:'Roll'},
+                    {id:'parallel',icon:Layers,l:'Conc.'},
+                    {id:'segmented',icon:CornerDownRight,l:'Seg.'}
+                  ].map(item => ( 
+                    <button key={item.id} onClick={() => { vibrate(12); setBendType(item.id); }} className={`flex items-center gap-1.5 ${settings.largeTargets ? 'px-5 py-3' : 'px-3 py-1.5'} rounded-full transition-all whitespace-nowrap ${bendType === item.id ? themeConfig.tabActive : 'text-slate-400'}`}>
+                      {item.customIcon ? item.customIcon : item.icon && <item.icon size={12}/>}
+                      <span className="text-[10px] font-black uppercase tracking-tight">{item.l}</span>
+                    </button> 
+                  ))}
                 </div> 
               </div> 
               <div id="bending-visualizer"><Visualizer type={bendType} data={visData} theme={theme}/></div> 
@@ -1332,7 +1347,7 @@ export default function App() {
               <DialogTitle className="font-sans text-white">Privacy Policy</DialogTitle>
             </DialogHeader>
             <ScrollArea className="h-[60vh] pr-4">
-              <div className="text-sm font-sans space-y-4 text-left">
+              <div className="text-sm font-sans space-y-4 text-left text-white">
                 <p>We are very pleased about your interest in our company. Data protection is of a particularly high priority for the management of NivoTools. Use of the NivoTools website is generally possible without providing any personal data. However, if a data subject wishes to use special services of our company via our website, the processing of personal data may become necessary. If the processing of personal data is necessary and there is no legal basis for such processing, we generally obtain the consent of the data subject.</p>
                 <p>The processing of personal data, such as the name, address, e-mail address, or telephone number of a data subject, is always carried out in accordance with the General Data Protection Regulation (GDPR) and in accordance with the country-specific data protection regulations applicable to NivoTools. By means of this privacy policy, our company wishes to inform the public about the type, scope, and purpose of the personal data we collect, use, and process. Furthermore, data subjects are informed of their rights by means of this privacy policy.</p>
                 <p>As the controller, NivoTools has implemented numerous technical and organizational measures to ensure the most complete protection of personal data processed through this website. However, internet-based data transmissions can fundamentally have security gaps, so absolute protection cannot be guaranteed. For this reason, every data subject is free to transmit personal data to us via alternative means, for example by telephone.</p>
@@ -1411,14 +1426,19 @@ export default function App() {
         <SettingsModal onClose={() => setShowSettings(false)} onClear={handleClearData} onDelete={handleDeleteAccount} settings={settings} setSettings={setSettings} themeConfig={themeConfig} theme={theme} /> 
       )} 
       <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md h-20 ${theme === 'light' ? 'bg-slate-50 border-slate-200 shadow-xl' : 'bg-slate-900 border-white/5'} backdrop-blur-xl border rounded-[2.5rem] px-6 flex items-center justify-around z-50 shadow-2xl`}> 
-        {[{id:'bending',icon:Move,l:'Bends'},{id:'cFill',icon:Download,l:'Conduit Fill'},{id:'bFill',icon:Package,l:'Box Fill'},{id:'projects',icon:FolderInput,l:'Vault'}].map(tab => ( 
+        {[
+          {id:'bending',icon:Move,l:'Bends'},
+          {id:'cFill',icon:null,l:'Conduit Fill', customIcon: (active: boolean) => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 3 : 2}><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/></svg>},
+          {id:'bFill',icon:Package,l:'Box Fill'},
+          {id:'projects',icon:FolderInput,l:'Vault'}
+        ].map(tab => ( 
           <button key={tab.id} onClick={() => { vibrate(12); setActiveTab(tab.id); }} className={`flex flex-col items-center gap-1.5 transition-all relative ${activeTab === tab.id ? themeConfig.accent : (theme === 'light' ? 'text-slate-400' : 'text-slate-500')}`}> 
             {activeTab === tab.id && <div className={`absolute -top-3 w-8 h-1 ${themeConfig.accentBg} rounded-full`}></div>} 
-            <tab.icon size={20} strokeWidth={activeTab === tab.id ? 3 : 2} /> 
+            {tab.customIcon ? tab.customIcon(activeTab === tab.id) : tab.icon && <tab.icon size={20} strokeWidth={activeTab === tab.id ? 3 : 2} />} 
             <span className="text-[9px] font-black uppercase tracking-widest text-center leading-tight">{tab.l}</span> 
           </button> 
         ))} 
-      </div> 
+      </div>
       <div className={`fixed bottom-28 left-1/2 -translate-x-1/2 ${themeConfig.card} border px-6 py-3 rounded-full shadow-2xl transition-all duration-500 z-50 backdrop-blur-md flex items-center gap-3 ${toast.s ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}><ShieldCheck size={16} className={themeConfig.accent}/><span className={`text-[10px] font-black uppercase tracking-widest ${theme === 'light' ? 'text-black' : 'text-white'}`}>{toast.m}</span></div> 
     </div> 
   ); 
