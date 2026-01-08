@@ -7,6 +7,9 @@ import {
   FileText, Loader2, Sun, Moon, HardHat, Plus, RotateCcw,
   Scale, CheckCircle2, Wand2, AlertTriangle, Settings, Mic, Type, MousePointerClick, Flashlight, Share2
 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import bendiqLogo from "@/assets/bendiq-logo.png";
 
 // Type declarations for external libraries and APIs
 declare global {
@@ -511,6 +514,8 @@ export default function App() {
   const [isExporting, setIsExporting] = useState(false); 
   const [isLevelActive, setIsLevelActive] = useState(false); 
   const [showSettings, setShowSettings] = useState(false);
+  const [showImprint, setShowImprint] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
   const [flashlightOn, setFlashlightOn] = useState(false);
   const [renamingProject, setRenamingProject] = useState<number | null>(null);
   const [renameValue, setRenameValue] = useState('');
@@ -882,7 +887,7 @@ export default function App() {
             </div> 
             <div className="grid grid-cols-2 gap-2 mb-4 items-end"> 
               <div className={`grid grid-cols-3 gap-1 ${themeConfig.tabBg} p-1 rounded-xl`}> 
-                {['EMT','IMC','RMC'].map(k=>(<button key={k} onClick={() => setMat(k)} className={`py-1.5 text-[10px] font-black rounded-lg transition-all ${mat===k ? themeConfig.tabActive : 'text-slate-500'}`}>{k}</button>))} 
+                {['EMT','IMC','RMC'].map(k=>(<button key={k} onClick={() => setMat(k)} className={`py-1.5 text-[10px] font-black rounded-xl transition-all ${mat===k ? themeConfig.tabActive : 'text-slate-500'}`}>{k}</button>))} 
               </div> 
               <div className="flex flex-col gap-1"> 
                 <label className={`text-[8px] font-black uppercase tracking-widest ${themeConfig.sub} text-center`}>Select conduit size</label> 
@@ -1050,7 +1055,7 @@ export default function App() {
   return ( 
     <div style={appStyle} className={`min-h-screen ${themeConfig.bg} ${themeConfig.text} overflow-x-hidden p-5 pb-32 flex flex-col items-center transition-colors duration-300`}> 
       <div className="w-full max-w-md mb-8 mt-2 flex items-center justify-between"> 
-        <div><h1 className="text-2xl font-black italic">BEND<span className={themeConfig.accent}>IQ</span></h1><div className="flex items-center gap-1.5"><div className={`w-1.5 h-1.5 rounded-full ${themeConfig.accentBg} animate-pulse`}></div><p className={`${themeConfig.sub} text-[9px] font-black uppercase tracking-[0.4em]`}>Beta Version 0.1</p></div></div> 
+        <div className="flex items-center gap-3"><img src={bendiqLogo} alt="BendIQ Logo" className="w-10 h-10 object-contain" /><div><h1 className="text-2xl font-black font-sans">BEND<span style={{ color: '#3C83F6' }}>IQ</span></h1><div className="flex items-center gap-1.5"><div className={`w-1.5 h-1.5 rounded-full ${themeConfig.accentBg} animate-pulse`}></div><p className={`${themeConfig.sub} text-[9px] font-black uppercase tracking-[0.4em]`}>Beta Version 0.1</p></div></div></div> 
         <div className="flex items-center gap-2"> 
           <button onClick={() => { vibrate(18); toggleFlashlight(); }} className={`w-9 h-9 ${themeConfig.card} border rounded-xl flex items-center justify-center shadow-lg active:scale-90 transition-transform ${flashlightOn ? 'bg-yellow-400 border-yellow-500 text-white' : ''}`}> 
             <Flashlight size={18} className={flashlightOn ? 'text-white' : themeConfig.text} fill={flashlightOn ? "currentColor" : "none"} /> 
@@ -1066,10 +1071,102 @@ export default function App() {
       <div className="max-w-md w-full relative"> 
         {renderContent()} 
         <div className="w-full mt-8 flex justify-center gap-6 pb-4"> 
-          <button className={`text-[10px] font-bold ${themeConfig.sub} hover:${themeConfig.text} transition-colors`}>Imprint</button> 
-          <button className={`text-[10px] font-bold ${themeConfig.sub} hover:${themeConfig.text} transition-colors`}>Privacy Policy</button>
+          <button onClick={() => setShowImprint(true)} className={`text-[10px] font-bold ${themeConfig.sub} hover:${themeConfig.text} transition-colors`}>Imprint</button> 
+          <button onClick={() => setShowPrivacy(true)} className={`text-[10px] font-bold ${themeConfig.sub} hover:${themeConfig.text} transition-colors`}>Privacy Policy</button>
           <button className={`text-[10px] font-bold ${themeConfig.sub} hover:${themeConfig.text} transition-colors`}>Log Out</button> 
         </div>
+        
+        <Dialog open={showImprint} onOpenChange={setShowImprint}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="font-sans">Imprint</DialogTitle>
+            </DialogHeader>
+            <div className="text-sm font-sans space-y-1">
+              <p>Julian Lohwasser</p>
+              <p>c/o Block Services</p>
+              <p>Stuttgarter Str. 106</p>
+              <p>70736 Fellbach</p>
+            </div>
+          </DialogContent>
+        </Dialog>
+        
+        <Dialog open={showPrivacy} onOpenChange={setShowPrivacy}>
+          <DialogContent className="max-w-lg max-h-[80vh]">
+            <DialogHeader>
+              <DialogTitle className="font-sans">Privacy Policy</DialogTitle>
+            </DialogHeader>
+            <ScrollArea className="h-[60vh] pr-4">
+              <div className="text-sm font-sans space-y-4 text-left">
+                <p>We are very pleased about your interest in our company. Data protection is of a particularly high priority for the management of NivoTools. Use of the NivoTools website is generally possible without providing any personal data. However, if a data subject wishes to use special services of our company via our website, the processing of personal data may become necessary. If the processing of personal data is necessary and there is no legal basis for such processing, we generally obtain the consent of the data subject.</p>
+                <p>The processing of personal data, such as the name, address, e-mail address, or telephone number of a data subject, is always carried out in accordance with the General Data Protection Regulation (GDPR) and in accordance with the country-specific data protection regulations applicable to NivoTools. By means of this privacy policy, our company wishes to inform the public about the type, scope, and purpose of the personal data we collect, use, and process. Furthermore, data subjects are informed of their rights by means of this privacy policy.</p>
+                <p>As the controller, NivoTools has implemented numerous technical and organizational measures to ensure the most complete protection of personal data processed through this website. However, internet-based data transmissions can fundamentally have security gaps, so absolute protection cannot be guaranteed. For this reason, every data subject is free to transmit personal data to us via alternative means, for example by telephone.</p>
+                
+                <h3 className="font-bold mt-4">Definitions</h3>
+                <p>The privacy policy of NivoTools is based on the terminology used by the European legislator for the adoption of the General Data Protection Regulation (GDPR). Our privacy policy should be easy to read and understand for the public as well as for our customers and business partners. To ensure this, we would like to explain the terminology used in advance.</p>
+                <p>In this privacy policy, we use, among others, the following terms:</p>
+                <ul className="list-disc pl-5 space-y-2">
+                  <li><strong>a) Personal data:</strong> Personal data means any information relating to an identified or identifiable natural person (hereinafter "data subject"). An identifiable natural person is one who can be identified, directly or indirectly, in particular by reference to an identifier such as a name, an identification number, location data, an online identifier, or to one or more factors specific to the physical, physiological, genetic, mental, economic, cultural, or social identity of that natural person.</li>
+                  <li><strong>b) Data subject:</strong> A data subject is any identified or identifiable natural person whose personal data is processed by the controller.</li>
+                  <li><strong>c) Processing:</strong> Processing is any operation or set of operations which is performed on personal data or on sets of personal data, whether or not by automated means, such as collection, recording, organization, structuring, storage, adaptation or alteration, retrieval, consultation, use, disclosure by transmission, dissemination or otherwise making available, alignment or combination, restriction, erasure or destruction.</li>
+                  <li><strong>d) Restriction of processing:</strong> Restriction of processing is the marking of stored personal data with the aim of limiting their processing in the future.</li>
+                  <li><strong>e) Profiling:</strong> Profiling means any form of automated processing of personal data consisting of the use of personal data to evaluate certain personal aspects relating to a natural person, in particular to analyze or predict aspects concerning that natural person's performance at work, economic situation, health, personal preferences, interests, reliability, behavior, location or movements.</li>
+                  <li><strong>f) Pseudonymization:</strong> Pseudonymization is the processing of personal data in such a manner that the personal data can no longer be attributed to a specific data subject without the use of additional information, provided that such additional information is kept separately and is subject to technical and organizational measures to ensure that the personal data are not attributed to an identified or identifiable natural person.</li>
+                  <li><strong>g) Controller or person responsible for processing:</strong> Controller or person responsible for processing is the natural or legal person, public authority, agency or other body which, alone or jointly with others, determines the purposes and means of the processing of personal data.</li>
+                  <li><strong>h) Processor:</strong> Processor is a natural or legal person, public authority, agency or other body which processes personal data on behalf of the controller.</li>
+                  <li><strong>i) Recipient:</strong> Recipient is a natural or legal person, public authority, agency or another body, to which the personal data are disclosed, whether a third party or not.</li>
+                  <li><strong>j) Third party:</strong> Third party is a natural or legal person, public authority, agency or body other than the data subject, controller, processor and persons who, under the direct authority of the controller or processor, are authorized to process personal data.</li>
+                  <li><strong>k) Consent:</strong> Consent of the data subject is any freely given, specific, informed and unambiguous indication of the data subject's wishes by which he or she, by a statement or by a clear affirmative action, signifies agreement to the processing of personal data relating to him or her.</li>
+                </ul>
+                
+                <h3 className="font-bold mt-4">Name and Address of the Controller</h3>
+                <p>The controller for the purposes of the General Data Protection Regulation, other data protection laws applicable in the Member States of the European Union, and other provisions related to data protection is:</p>
+                <p>Julian Lohwasser c/o Block Services Stuttgarter Str. 106 70736 Fellbach Germany Tel.: 015679758515 Email: nivotools@gmail.com Website: bendiq.lovable.app</p>
+                
+                <h3 className="font-bold mt-4">Cookies</h3>
+                <p>The website of NivoTools uses cookies. Cookies are text files that are placed and stored on a computer system via an internet browser. Through the use of cookies, NivoTools can provide the users of this website with more user-friendly services that would not be possible without the setting of cookies.</p>
+                
+                <h3 className="font-bold mt-4">Collection of General Data and Information</h3>
+                <p>The website of NivoTools collects a series of general data and information when a data subject or automated system calls up the website. This general data and information are stored in the server log files.</p>
+                
+                <h3 className="font-bold mt-4">Registration on Our Website</h3>
+                <p>The data subject has the possibility to register on the website of the controller with the indication of personal data. The personal data entered by the data subject are collected and stored exclusively for internal use by the controller and for its own purposes.</p>
+                
+                <h3 className="font-bold mt-4">Rights of the Data Subject</h3>
+                <ul className="list-disc pl-5 space-y-2">
+                  <li><strong>Right of confirmation:</strong> Each data subject shall have the right to obtain from the controller the confirmation as to whether or not personal data concerning him or her are being processed.</li>
+                  <li><strong>Right of access:</strong> Each data subject shall have the right to obtain from the controller free information about his or her personal data stored at any time and a copy of this information.</li>
+                  <li><strong>Right to rectification:</strong> Each data subject shall have the right to obtain from the controller without undue delay the rectification of inaccurate personal data concerning him or her.</li>
+                  <li><strong>Right to erasure:</strong> Each data subject shall have the right to obtain from the controller the erasure of personal data concerning him or her without undue delay.</li>
+                  <li><strong>Right to data portability:</strong> Each data subject shall have the right to receive the personal data concerning him or her in a structured, commonly used and machine-readable format.</li>
+                  <li><strong>Right to object:</strong> Each data subject shall have the right to object, on grounds relating to his or her particular situation, at any time, to processing of personal data concerning him or her.</li>
+                  <li><strong>Right to withdraw data protection consent:</strong> Each data subject shall have the right to withdraw his or her consent to processing of his or her personal data at any time.</li>
+                </ul>
+                
+                <h3 className="font-bold mt-4">Data Protection Provisions for Google Firebase</h3>
+                <p>The controller has integrated components of Google Firebase on this website. Firebase is a platform from Google for developing web and mobile applications.</p>
+                <ul className="list-disc pl-5 space-y-2">
+                  <li><strong>Authentication:</strong> We use Firebase Authentication to identify and manage user accounts. Personal data such as email addresses and user IDs are processed for the purpose of authentication.</li>
+                  <li><strong>Firestore:</strong> We use Firestore for cloud-based storage and synchronization of project data (bending values and app-specific settings). Project data is stored on Google servers.</li>
+                  <li><strong>Third-country transfer:</strong> The use of Google Firebase involves the transfer of data to the United States of America. Google uses standard contractual clauses approved by the European Commission for this purpose.</li>
+                </ul>
+                
+                <h3 className="font-bold mt-4">Use of Device Sensors</h3>
+                <ul className="list-disc pl-5 space-y-2">
+                  <li><strong>Gyroscope:</strong> Angle measurement is performed via the motion sensors built into the end device. The processing of this sensor data takes place exclusively locally on your end device. No storage or transmission of this movement data to external servers takes place.</li>
+                  <li><strong>Camera/Light:</strong> Activating the flashlight requires access to the camera unit. The app exclusively uses the flash/light element; no image data is captured, stored, or transmitted.</li>
+                </ul>
+                
+                <h3 className="font-bold mt-4">Use of Local Storage</h3>
+                <p>In addition to cookies, this website uses the browser's "Local Storage" to store functional app data on the user's end device, including language settings, units of measurement, design mode, and progress data.</p>
+                
+                <h3 className="font-bold mt-4">Data Security</h3>
+                <p>To secure the transmitted information, this website uses SSL or TLS encryption (HTTPS). This encryption protects the data transmission between the app interface and the Google Firebase database from unauthorized access by third parties.</p>
+                
+                <p className="text-xs text-muted-foreground mt-6">This privacy policy was created by the Privacy Policy Generator of the DGD Deutsche Gesellschaft für Datenschutz GmbH, acting as External Data Protection Officer Munich, in cooperation with the Cologne IT and data protection lawyer Christian Solmecke.</p>
+              </div>
+            </ScrollArea>
+          </DialogContent>
+        </Dialog>
       </div> 
       {isLevelActive && ( 
         <LevelModal targetAngle={bendType === 'segmented' ? (a / n) : a} onClose={() => setIsLevelActive(false)} themeConfig={themeConfig} theme={theme} /> 
