@@ -166,13 +166,13 @@ const Login = () => {
           <h1 className="text-3xl font-bold text-white font-sans tracking-wide">
             BEND<span style={{ color: '#3C83F6' }}>IQ</span>
           </h1>
-          <p className="text-slate-500 mt-2 uppercase" style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", fontSize: '12px', fontWeight: 500 }}>
+          <p className="text-slate-500 mt-2 uppercase" style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", fontSize: '12px', fontWeight: 500, letterSpacing: '0.15em' }}>
             PROFESSIONAL CONDUIT BENDING
           </p>
         </div>
 
         {/* Auth Form */}
-        <div className={`bg-slate-800/50 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl transition-all duration-700 delay-200 ${formVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+        <div className={`backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl transition-all duration-700 delay-200 ${formVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`} style={{ backgroundColor: '#0B111E' }}>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email" className="text-slate-300 text-sm font-sans">Email</Label>
@@ -186,7 +186,7 @@ const Login = () => {
                 }}
                 onBlur={() => email && validateEmail(email)}
                 placeholder="Enter your email"
-                className={`bg-slate-900/50 border-white/10 text-white placeholder:text-slate-500 font-sans ${emailError ? 'border-red-500' : ''}`}
+                className={`bg-slate-900/50 border-white/10 text-white placeholder:text-slate-500 font-sans rounded-xl ${emailError ? 'border-red-500' : ''}`}
               />
               {emailError && (
                 <p className="text-red-400 text-xs font-sans animate-fade-in">{emailError}</p>
@@ -206,7 +206,7 @@ const Login = () => {
                   }}
                   onBlur={() => password && validatePassword(password)}
                   placeholder="Enter your password"
-                  className={`bg-slate-900/50 border-white/10 text-white placeholder:text-slate-500 pr-10 font-sans ${passwordError ? 'border-red-500' : ''}`}
+                  className={`bg-slate-900/50 border-white/10 text-white placeholder:text-slate-500 pr-10 font-sans rounded-xl ${passwordError ? 'border-red-500' : ''}`}
                 />
                 <button
                   type="button"
@@ -228,7 +228,7 @@ const Login = () => {
                     id="remember" 
                     checked={rememberMe}
                     onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                    className="border-white/20 data-[state=checked]:bg-blue-600 rounded-md"
+                    className="border-white/20 data-[state=checked]:bg-blue-600 rounded-full"
                   />
                   <Label htmlFor="remember" className="text-slate-400 text-xs font-sans cursor-pointer">
                     Remember me
@@ -366,7 +366,7 @@ const Login = () => {
 
       {/* Imprint Dialog */}
       <Dialog open={showImprint} onOpenChange={setShowImprint}>
-        <DialogContent className="bg-slate-800 border-white/10 max-w-md">
+        <DialogContent className="bg-slate-900/80 backdrop-blur-xl border-white/20 max-w-md">
           <DialogHeader>
             <DialogTitle className="text-white font-sans">Imprint</DialogTitle>
           </DialogHeader>
@@ -381,7 +381,7 @@ const Login = () => {
 
       {/* Privacy Policy Dialog */}
       <Dialog open={showPrivacy} onOpenChange={setShowPrivacy}>
-        <DialogContent className="bg-slate-800 border-white/10 max-w-lg max-h-[80vh]">
+        <DialogContent className="bg-slate-900/80 backdrop-blur-xl border-white/20 max-w-lg max-h-[80vh]">
           <DialogHeader>
             <DialogTitle className="text-white font-sans">Privacy Policy</DialogTitle>
           </DialogHeader>

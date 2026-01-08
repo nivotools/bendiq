@@ -783,18 +783,221 @@ export default function App() {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF('p', 'mm', 'a4');
       const snap = p.snapshot;
-      const exportContainer = document.createElement('div');
-      exportContainer.style.position = 'absolute'; exportContainer.style.left = '-9999px'; exportContainer.style.width = '210mm'; exportContainer.style.background = 'white'; exportContainer.style.padding = '20mm';
-      document.body.appendChild(exportContainer);
-      exportContainer.innerHTML = `<div style="border-bottom: 2px solid #3b82f6; padding-bottom: 10px; margin-bottom: 20px;"><h1 style="margin:0; color:#0f172a;">BendIQ</h1><p style="margin:0; font-size:10px; color:#64748b;">PROJECT SPECIFICATION: ${p.t} (${p.dt})</p></div><div id="pdf-vis-anchor" style="margin-bottom: 20px;"></div>`;
-      const visId = snap.activeTab === 'bending' ? 'bending-visualizer' : snap.activeTab === 'cFill' ? 'fill-visualizer' : 'box-visualizer';
-      const canvas = await window.html2canvas(document.getElementById(visId), { scale: 2 });
-      exportContainer.querySelector('#pdf-vis-anchor').innerHTML = `<img src="${canvas.toDataURL('image/png')}" style="width:100%; border-radius:10px;" />`;
-      const finalCanvas = await window.html2canvas(exportContainer, { scale: 2 });
-      doc.addImage(finalCanvas.toDataURL('image/png'), 'PNG', 0, 0, 210, (finalCanvas.height * 210) / finalCanvas.width);
-      doc.save(`Report_${p.t.replace(/\s+/g,'_')}.pdf`);
-      document.body.removeChild(exportContainer);
-    } catch (e) { console.error(e); } finally { setIsExporting(false); }
+      
+      // Page dimensions
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const margin = 15;
+      const contentWidth = pageWidth - (margin * 2);
+      let yPos = margin;
+      
+      // Helper function to add gradient header
+      const addHeader = () => {
+        // Blue gradient header bar
+        doc.setFillColor(37, 99, 235); // blue-600
+        doc.rect(0, 0, pageWidth, 35, 'F');
+        
+        // Secondary gradient overlay
+        doc.setFillColor(59, 130, 246); // blue-500
+        doc.rect(0, 0, pageWidth, 25, 'F');
+        
+        // Logo/Title
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(24);
+        doc.setFont('helvetica', 'bold');
+        doc.text('BENDIQ', margin, 18);
+        
+        // Subtitle
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.text('PROFESSIONAL CONDUIT BENDING', margin, 25);
+        
+        // Date on right side
+        doc.setFontSize(9);
+        doc.text(p.dt, pageWidth - margin, 18, { align: 'right' });
+        
+        yPos = 45;
+      };
+      
+      // Helper function to draw section box
+      const addSection = (title: string, content: { label: string; value: string; highlight?: boolean }[]) => {
+        // Section header
+        doc.setFillColor(241, 245, 249); // slate-100
+        doc.roundedRect(margin, yPos, contentWidth, 12, 2, 2, 'F');
+        doc.setTextColor(15, 23, 42); // slate-900
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text(title.toUpperCase(), margin + 5, yPos + 8);
+        yPos += 16;
+        
+        // Content rows
+        content.forEach((item, index) => {
+          const rowY = yPos + (index * 10);
+          
+          // Alternating row background
+          if (index % 2 === 0) {
+            doc.setFillColor(248, 250, 252); // slate-50
+            doc.rect(margin, rowY - 3, contentWidth, 10, 'F');
+          }
+          
+          // Label
+          doc.setTextColor(100, 116, 139); // slate-500
+          doc.setFontSize(10);
+          doc.setFont('helvetica', 'normal');
+          doc.text(item.label, margin + 5, rowY + 4);
+          
+          // Value
+          if (item.highlight) {
+            doc.setTextColor(37, 99, 235); // blue-600
+            doc.setFont('helvetica', 'bold');
+          } else {
+            doc.setTextColor(15, 23, 42); // slate-900
+            doc.setFont('helvetica', 'bold');
+          }
+          doc.text(item.value, pageWidth - margin - 5, rowY + 4, { align: 'right' });
+        });
+        
+        yPos += (content.length * 10) + 10;
+      };
+      
+      // Start building PDF
+      addHeader();
+      
+      // Project title section
+      doc.setFillColor(37, 99, 235);
+      doc.roundedRect(margin, yPos, contentWidth, 20, 3, 3, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Project: ${p.t}`, margin + 8, yPos + 13);
+      yPos += 30;
+      
+      // Generate content based on project type
+      if (snap.activeTab === 'bending') {
+        const bendTypeLabels = {
+          offset: 'Offset Bend',
+          saddle3: '3-Point Saddle',
+          saddle4: '4-Point Saddle',
+          roll: 'Rolling Offset',
+          parallel: 'Concentric Bend',
+          segmented: 'Segment Bend'
+        };
+        
+        // Bend type section
+        addSection('Bend Configuration', [
+          { label: 'Bend Type', value: bendTypeLabels[snap.bendType] || snap.bendType, highlight: true },
+          { label: 'Material', value: snap.mat }
+        ]);
+        
+        // Measurements section based on bend type
+        const measurements = [];
+        if (snap.bendType === 'offset') {
+          const travel = snap.h / Math.sin((snap.a * Math.PI) / 180);
+          const shrink = 2 * snap.h * (Math.pow(Math.sin((snap.a * Math.PI / 180)/2), 2) / Math.sin((snap.a * Math.PI) / 180));
+          measurements.push({ label: 'Height', value: `${snap.h}"` });
+          measurements.push({ label: 'Angle', value: `${snap.a}°` });
+          measurements.push({ label: 'Travel', value: `${travel.toFixed(2)}"`, highlight: true });
+          measurements.push({ label: 'Shrinkage', value: `${shrink.toFixed(2)}"` });
+        } else if (snap.bendType === 'saddle3') {
+          const dist = snap.h / Math.sin(((snap.a/2) * Math.PI) / 180);
+          measurements.push({ label: 'Obstacle Height', value: `${snap.h}"` });
+          measurements.push({ label: 'Angle', value: `${snap.a}°` });
+          measurements.push({ label: 'Center to Side', value: `${dist.toFixed(2)}"`, highlight: true });
+        } else if (snap.bendType === 'saddle4') {
+          const travel = snap.h / Math.sin((snap.a * Math.PI) / 180);
+          measurements.push({ label: 'Height', value: `${snap.h}"` });
+          measurements.push({ label: 'Width', value: `${snap.w}"` });
+          measurements.push({ label: 'Angle', value: `${snap.a}°` });
+          measurements.push({ label: 'Travel', value: `${travel.toFixed(2)}"`, highlight: true });
+        } else if (snap.bendType === 'roll') {
+          const trueO = Math.sqrt(snap.offsetR * snap.offsetR + snap.offsetO * snap.offsetO);
+          measurements.push({ label: 'Rise', value: `${snap.offsetR}"` });
+          measurements.push({ label: 'Roll', value: `${snap.offsetO}"` });
+          measurements.push({ label: 'True Offset', value: `${trueO.toFixed(2)}"`, highlight: true });
+        } else if (snap.bendType === 'parallel') {
+          const stagger = snap.s * Math.tan(((snap.a/2) * Math.PI) / 180);
+          measurements.push({ label: 'Spacing', value: `${snap.s}"` });
+          measurements.push({ label: 'Number of Pipes', value: `${snap.numPipes || 3}` });
+          measurements.push({ label: 'Angle', value: `${snap.a}°` });
+          measurements.push({ label: 'Stagger', value: `${stagger.toFixed(2)}"`, highlight: true });
+        } else if (snap.bendType === 'segmented') {
+          const dev = (Math.PI * snap.r * snap.a) / 180;
+          measurements.push({ label: 'Radius', value: `${snap.r}"` });
+          measurements.push({ label: 'Total Angle', value: `${snap.a}°` });
+          measurements.push({ label: 'Number of Shots', value: `${snap.n}` });
+          measurements.push({ label: 'Per Shot Angle', value: `${(snap.a / snap.n).toFixed(2)}°` });
+          measurements.push({ label: 'Developed Length', value: `${dev.toFixed(2)}"`, highlight: true });
+        }
+        
+        if (measurements.length > 0) {
+          addSection('Measurements & Results', measurements);
+        }
+        
+      } else if (snap.activeTab === 'cFill') {
+        const totalArea = snap.wires.reduce((acc, w) => {
+          const wireData = { "14": 0.0097, "12": 0.0133, "10": 0.0211, "8": 0.0366, "6": 0.0507 };
+          return acc + (wireData[w.s] || 0) * w.c;
+        }, 0);
+        const conduitData = { "0.5": 0.304, "0.75": 0.533, "1": 0.864, "1.25": 1.496, "1.5": 2.036, "2": 3.356 };
+        const capArea = conduitData[snap.cs] || 0.533;
+        const fillPct = (totalArea / capArea) * 100;
+        
+        addSection('Conduit Fill Analysis', [
+          { label: 'Conduit Type', value: snap.ct },
+          { label: 'Conduit Size', value: `${snap.cs}"` },
+          { label: 'Fill Percentage', value: `${fillPct.toFixed(1)}%`, highlight: fillPct > 40 }
+        ]);
+        
+        // Wire breakdown
+        const wireContent = snap.wires.map(w => ({
+          label: `#${w.s} AWG`,
+          value: `${w.c} conductors`
+        }));
+        if (wireContent.length > 0) {
+          addSection('Wire Details', wireContent);
+        }
+        
+      } else if (snap.activeTab === 'bFill') {
+        const boxData = [
+          { label: "4x1-1/2 Sq", vol: 21.0 }, 
+          { label: "4x2-1/8 Sq", vol: 30.3 }, 
+          { label: "4-11/16 Sq", vol: 42.0 }, 
+          { label: "Handy Box", vol: 13.0 }
+        ];
+        const boxUsed = (snap.w14 * 2) + (snap.w12 * 2.25) + (snap.dev * 4.5);
+        const boxCap = boxData[snap.selBox]?.vol || 21;
+        
+        addSection('Box Fill Analysis', [
+          { label: 'Box Type', value: boxData[snap.selBox]?.label || 'Unknown' },
+          { label: 'Capacity', value: `${boxCap} in³` },
+          { label: 'Used Volume', value: `${boxUsed.toFixed(2)} in³`, highlight: boxUsed > boxCap }
+        ]);
+        
+        addSection('Wire Count', [
+          { label: '#14 AWG Wires', value: `${snap.w14}` },
+          { label: '#12 AWG Wires', value: `${snap.w12}` },
+          { label: 'Devices/Yokes', value: `${snap.dev}` }
+        ]);
+      }
+      
+      // Footer
+      const footerY = pageHeight - 20;
+      doc.setDrawColor(226, 232, 240); // slate-200
+      doc.line(margin, footerY, pageWidth - margin, footerY);
+      doc.setTextColor(148, 163, 184); // slate-400
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Generated by BendIQ - Professional Conduit Bending Calculator', pageWidth / 2, footerY + 8, { align: 'center' });
+      doc.text('bendiq.lovable.app', pageWidth / 2, footerY + 14, { align: 'center' });
+      
+      doc.save(`BendIQ_${p.t.replace(/\s+/g,'_')}_Report.pdf`);
+    } catch (e) { 
+      console.error(e); 
+      setToast({ s: true, m: "PDF Export Failed" });
+      setTimeout(() => setToast({ s: false, m: "" }), 2000);
+    } finally { 
+      setIsExporting(false); 
+    }
   };
   const renderContent = () => {
     switch (activeTab) {
@@ -904,7 +1107,7 @@ export default function App() {
               </div> 
               <div className="flex items-center gap-2"> 
               <button onClick={() => { vibrate(18); resetTab(); }} className={`p-2.5 ${themeConfig.card} rounded-full active:rotate-180 transition-transform duration-500 shadow-sm`}><RotateCcw size={16}/></button>
-                <button onClick={() => { vibrate(18); setIsLevelActive(true); }} className={`p-2.5 ${themeConfig.card} rounded-full active:scale-90 shadow-sm`}><Scale size={16}/></button> 
+                <button onClick={() => { vibrate(18); setIsLevelActive(true); }} className={`p-2.5 ${themeConfig.card} rounded-full active:scale-90 shadow-sm`} title="Spirit Level"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="10" rx="2" /><circle cx="12" cy="12" r="3" /><line x1="9" y1="12" x2="10" y2="12" /><line x1="14" y1="12" x2="15" y2="12" /></svg></button>
                 <button onClick={() => { vibrate(18); saveProject(bendType.toUpperCase(), `H:${h}" A:${a}°`); }} className={`p-2.5 ${themeConfig.accentBg} text-white rounded-full active:scale-90 transition-transform shadow-lg`}><Save size={16}/></button>
               </div> 
             </div> 
@@ -1012,7 +1215,7 @@ export default function App() {
               </div> 
               <div className="flex items-center gap-2"> 
               <button onClick={() => { vibrate(18); resetTab(); }} className={`p-2.5 ${themeConfig.card} rounded-full active:rotate-180 transition-transform duration-500 shadow-sm`}><RotateCcw size={16}/></button>
-                <button onClick={() => { vibrate(18); setIsLevelActive(true); }} className={`p-2.5 ${themeConfig.card} rounded-full active:scale-90 shadow-sm`}><Scale size={16}/></button> 
+                <button onClick={() => { vibrate(18); setIsLevelActive(true); }} className={`p-2.5 ${themeConfig.card} rounded-full active:scale-90 shadow-sm`} title="Spirit Level"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="10" rx="2" /><circle cx="12" cy="12" r="3" /><line x1="9" y1="12" x2="10" y2="12" /><line x1="14" y1="12" x2="15" y2="12" /></svg></button> 
                 <button onClick={() => { vibrate(18); saveProject("BOX", BOX_DATA[selBox].label); }} className={`p-2.5 ${themeConfig.accentBg} text-white rounded-full active:scale-90 transition-transform shadow-lg`}><Save size={16}/></button>
               </div> 
             </div> 
@@ -1110,11 +1313,11 @@ export default function App() {
         </div>
         
         <Dialog open={showImprint} onOpenChange={setShowImprint}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="bg-slate-900/80 backdrop-blur-xl border-white/20 max-w-md">
             <DialogHeader>
-              <DialogTitle className="font-sans">Imprint</DialogTitle>
+              <DialogTitle className="font-sans text-white">Imprint</DialogTitle>
             </DialogHeader>
-            <div className="text-sm font-sans space-y-1">
+            <div className="text-sm font-sans space-y-1 text-slate-300">
               <p>Julian Lohwasser</p>
               <p>c/o Block Services</p>
               <p>Stuttgarter Str. 106</p>
@@ -1124,9 +1327,9 @@ export default function App() {
         </Dialog>
         
         <Dialog open={showPrivacy} onOpenChange={setShowPrivacy}>
-          <DialogContent className="max-w-lg max-h-[80vh]">
+          <DialogContent className="bg-slate-900/80 backdrop-blur-xl border-white/20 max-w-lg max-h-[80vh]">
             <DialogHeader>
-              <DialogTitle className="font-sans">Privacy Policy</DialogTitle>
+              <DialogTitle className="font-sans text-white">Privacy Policy</DialogTitle>
             </DialogHeader>
             <ScrollArea className="h-[60vh] pr-4">
               <div className="text-sm font-sans space-y-4 text-left">
