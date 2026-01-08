@@ -40,6 +40,13 @@ const WIRE_DATA = {
     "10": { area: 0.0211, diam: 0.164 }, 
     "8": { area: 0.0366, diam: 0.216 }, 
     "6": { area: 0.0507, diam: 0.254 } 
+  },
+  "XHHW": { 
+    "14": { area: 0.0139, diam: 0.133 }, 
+    "12": { area: 0.0181, diam: 0.152 }, 
+    "10": { area: 0.0243, diam: 0.176 }, 
+    "8": { area: 0.0437, diam: 0.236 }, 
+    "6": { area: 0.0590, diam: 0.274 } 
   }
 };
 
@@ -65,6 +72,35 @@ const BOX_DATA = [
   { label: "4-11/16 Sq", vol: 42.0 }, 
   { label: "Handy Box", vol: 13.0 }
 ];
+
+// NEC Table 1 fill percentages
+const getNECFillPercentage = (wireCount: number, isNipple: boolean = false): number => {
+  if (isNipple) return 60; // NEC Note 4: 24" or less conduit = 60%
+  if (wireCount === 1) return 53;
+  if (wireCount === 2) return 31;
+  return 40; // 3+ wires
+};
+
+// NEC Table 2, Chapter 9 - Minimum bending radius (in inches)
+const NEC_MIN_RADIUS = {
+  "0.5": 4,
+  "0.75": 4.5,
+  "1": 5.75,
+  "1.25": 7.25,
+  "1.5": 8.25,
+  "2": 10.5,
+  "2.5": 13,
+  "3": 15
+};
+
+// NEC 314.16(B) Volume allowances per wire size (in³)
+const WIRE_VOLUME = {
+  "14": 2.0,
+  "12": 2.25,
+  "10": 2.5,
+  "8": 3.0,
+  "6": 5.0
+};
 
 const CONDUIT_TYPES = {
   "EMT": { label: "EMT", springback: 0.05 },
@@ -544,13 +580,21 @@ export default function App() {
   const [numPipes, setNumPipes] = useState(3);
   const [ct, setCt] = useState("EMT"); 
   const [cs, setCs] = useState("0.75"); 
+  const [wireType, setWireType] = useState("THHN");
   const [wires, setWires] = useState([{ s: '12', c: 3 }]);
+  const [conduitLength, setConduitLength] = useState(48); // inches, for nipple detection
   const [selBox, setSelBox] = useState(0); 
   const [w14, setW14] = useState(2); 
   const [w12, setW12] = useState(4); 
+  const [w10, setW10] = useState(0);
   const [dev, setDev] = useState(1);
+  const [hasClamps, setHasClamps] = useState(false);
+  const [groundCount, setGroundCount] = useState(1);
+  const [largestGroundSize, setLargestGroundSize] = useState('14');
+  const [supportFittings, setSupportFittings] = useState(0);
   const [bendSize, setBendSize] = useState("0.75");
   const [autoAngle, setAutoAngle] = useState(true);
+  const [totalBendDegrees, setTotalBendDegrees] = useState(0); // Track cumulative bend degrees
   const themeConfig = useMemo(() => {
     const isLight = theme === 'light';
     const isConst = theme === 'construction';
@@ -643,7 +687,7 @@ export default function App() {
   };
   const getBendWarnings = useCallback((bendType) => {
     const warnings = [];
-    if (!['offset', 'saddle3', 'saddle4'].includes(bendType)) return warnings;
+    if (!['offset', 'saddle3', 'saddle4', 'segmented'].includes(bendType)) return warnings;
     const travel = h / Math.sin(toRad(a));
     if (travel > 110) {
       warnings.push({ type: 'error', msg: "Error: Offset too long for a single 10ft stick (>110\")."});
@@ -651,8 +695,19 @@ export default function App() {
     if (h > 22) {
       warnings.push({ type: 'warn', msg: "Warning: May exceed floor bender clearance (>22\")."});
     }
+    // NEC minimum radius check for segmented bends
+    if (bendType === 'segmented') {
+      const minRadius = NEC_MIN_RADIUS[bendSize] || 4.5;
+      if (r < minRadius) {
+        warnings.push({ type: 'error', msg: `NEC Violation: Min radius for ${bendSize}" is ${minRadius}" (Table 2, Chapter 9).`});
+      }
+    }
+    // NEC 360° total bend limit
+    if (totalBendDegrees + a > 360) {
+      warnings.push({ type: 'error', msg: `NEC 358.26: Cannot exceed 360° between pull points (Current: ${totalBendDegrees + a}°).`});
+    }
     return warnings;
-  }, [h, a]);
+  }, [h, a, bendSize, r, totalBendDegrees]);
   // Native mobile share functionality with Web Share API and clipboard fallback
   const handleShare = async (title: string, text: string) => {
     const shareData = { 
@@ -806,12 +861,13 @@ export default function App() {
         // Add logos with proper aspect ratios
         try {
           // Logo - left side (square logo, keeping natural aspect ratio)
-          const logoSize = 20;
-          doc.addImage(bendiqLogoPdf, 'PNG', margin, 7.5, logoSize, logoSize);
+          const logoHeight = 20;
+          const logoWidth = 15; // thinner width while keeping height
+          doc.addImage(bendiqLogoPdf, 'PNG', margin, 7.5, logoWidth, logoHeight);
           // Text logo - next to the logo (wider aspect ratio ~3:1)
           const textWidth = 60;
           const textHeight = 20;
-          doc.addImage(bendiqTextPdf, 'PNG', margin + logoSize + 5, 7.5, textWidth, textHeight);
+          doc.addImage(bendiqTextPdf, 'PNG', margin + logoWidth + 5, 7.5, textWidth, textHeight);
         } catch (imgErr) {
           // Fallback to text if images fail
           doc.setTextColor(255, 255, 255);
@@ -1149,9 +1205,28 @@ export default function App() {
                 <select className={`${themeConfig.inset} text-[10px] font-black p-1.5 rounded-xl outline-none appearance-none border-none text-center ${themeConfig.text}`} value={bendSize} onChange={(e)=>setBendSize(e.target.value)}>{['0.5','0.75','1','1.25','1.5','2','2.5','3'].map(s=><option key={s} value={s}>{s}"</option>)}</select> 
               </div> 
             </div> 
+            
+            {/* Total Bend Degrees Accumulator */}
+            <div className={`${themeConfig.card} p-4 rounded-2xl mb-4 shadow-md`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertCircle size={14} className={totalBendDegrees + a > 360 ? 'text-red-500' : themeConfig.accent} />
+                  <span className={`text-[10px] font-black uppercase tracking-widest ${themeConfig.sub}`}>Total Run Degrees (NEC 358.26)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-lg font-mono font-black ${totalBendDegrees + a > 360 ? 'text-red-500' : themeConfig.accent}`}>{totalBendDegrees + a}°</span>
+                  <span className={`text-[9px] ${themeConfig.sub}`}>/ 360° max</span>
+                </div>
+              </div>
+              <div className="flex gap-2 mt-3">
+                <button onClick={() => { vibrate(12); setTotalBendDegrees(prev => prev + a); }} className={`flex-1 py-2 px-3 text-[9px] font-black uppercase rounded-lg ${themeConfig.accentBg} text-white active:scale-95 transition-transform`}>Add Bend</button>
+                <button onClick={() => { vibrate(12); setTotalBendDegrees(0); }} className={`py-2 px-3 text-[9px] font-black uppercase rounded-lg bg-slate-700 text-white active:scale-95 transition-transform`}>Reset</button>
+              </div>
+            </div>
+            
             <div className={`${themeConfig.card} p-6 rounded-3xl shadow-lg`}> 
               {resultNode} 
-              <WarningBox warnings={warnings} theme={theme}/> 
+              <WarningBox warnings={warnings} theme={theme}/>
               <SpringbackAdvisory angle={a} type={mat} theme={theme} bendType={bendType} n={n}/> 
             </div> 
             <div className={`mt-6 p-4 ${themeConfig.card} rounded-2xl flex flex-col gap-3 shadow-inner`}> 
@@ -1171,9 +1246,14 @@ export default function App() {
           </div> 
         ); 
       case 'cFill': 
-        const totalArea = wires.reduce((acc, w) => acc + (WIRE_DATA.THHN[w.s]?.area || 0) * w.c, 0); 
+        const totalWireCount = wires.reduce((acc, w) => acc + w.c, 0);
+        const isNipple = conduitLength <= 24;
+        const allowedFillPct = getNECFillPercentage(totalWireCount, isNipple);
+        const totalArea = wires.reduce((acc, w) => acc + (WIRE_DATA[wireType][w.s]?.area || 0) * w.c, 0); 
         const capArea = CONDUIT_DATA[ct][cs].area; 
-        const fillPct = (totalArea / capArea) * 100; 
+        const fillPct = (totalArea / capArea) * 100;
+        const maxAllowedArea = capArea * (allowedFillPct / 100);
+        const isViolation = fillPct > allowedFillPct;
         return ( 
           <div className="animate-in fade-in duration-500"> 
             <div className="flex items-center justify-between mb-4"> 
@@ -1186,7 +1266,32 @@ export default function App() {
                 <button onClick={() => { vibrate(18); saveProject("FILL", `${ct} ${cs}"`); }} className={`p-2.5 ${themeConfig.accentBg} text-white rounded-full active:scale-90 transition-transform shadow-lg`}><Save size={16}/></button>
               </div> 
             </div> 
-            <div id="fill-visualizer"><Visualizer type="conduitFill" data={{ fill: fillPct }} theme={theme}/></div> 
+            <div id="fill-visualizer"><Visualizer type="conduitFill" data={{ fill: fillPct, limit: allowedFillPct }} theme={theme}/></div> 
+            
+            {/* NEC Info Panel */}
+            <div className={`${themeConfig.card} p-4 rounded-2xl mb-4 shadow-md`}>
+              <div className="flex items-center gap-2 mb-2">
+                <ShieldCheck size={14} className={themeConfig.accent} />
+                <span className={`text-[10px] font-black uppercase tracking-widest ${themeConfig.sub}`}>NEC Chapter 9 Table 1</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-[10px]">
+                <div className={`p-2 rounded-lg ${themeConfig.inset} flex justify-between`}>
+                  <span className={themeConfig.sub}>Conductors:</span>
+                  <span className={`font-bold ${themeConfig.text}`}>{totalWireCount}</span>
+                </div>
+                <div className={`p-2 rounded-lg ${themeConfig.inset} flex justify-between`}>
+                  <span className={themeConfig.sub}>Max Fill:</span>
+                  <span className={`font-bold ${themeConfig.accent}`}>{allowedFillPct}%</span>
+                </div>
+              </div>
+              {isNipple && (
+                <div className="mt-2 p-2 rounded-lg bg-green-500/10 border border-green-500/30 flex items-center gap-2">
+                  <CheckCircle2 size={12} className="text-green-500" />
+                  <span className="text-[9px] text-green-400 font-bold">Nipple Exception (≤24") - 60% Fill Allowed</span>
+                </div>
+              )}
+            </div>
+            
             <div className="mt-4 grid grid-cols-4 gap-2 mb-4"> 
               {['14', '12', '10', '8'].map(g => ( 
                 <button key={g} onClick={() => { vibrate(18); addGauge(g); }} className={`flex flex-col items-center justify-center p-3 rounded-2xl border ${themeConfig.card} hover:border-blue-500 transition-all active:scale-95 group shadow-sm`}> 
@@ -1196,7 +1301,7 @@ export default function App() {
               ))} 
             </div> 
             <div className={`${themeConfig.card} p-5 rounded-3xl mb-4 shadow-lg`}> 
-              <div className="flex gap-2 mb-6"> 
+              <div className="flex gap-2 mb-4"> 
                 <Select value={ct} onValueChange={setCt}>
                   <SelectTrigger className={`flex-1 h-12 rounded-2xl border-0 ${themeConfig.inset} ${themeConfig.text} text-xs font-bold`}>
                     <SelectValue placeholder="Type" />
@@ -1218,10 +1323,27 @@ export default function App() {
                   </SelectContent>
                 </Select>
               </div>
+              
+              {/* Wire Type Selector */}
+              <div className="flex gap-2 mb-4">
+                <Select value={wireType} onValueChange={setWireType}>
+                  <SelectTrigger className={`flex-1 h-10 rounded-xl border-0 ${themeConfig.inset} ${themeConfig.text} text-xs font-bold`}>
+                    <SelectValue placeholder="Wire Type" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-slate-700 rounded-xl">
+                    <SelectItem value="THHN" className="text-white hover:bg-slate-800 focus:bg-slate-800 rounded-lg cursor-pointer">THHN (Standard)</SelectItem>
+                    <SelectItem value="XHHW" className="text-white hover:bg-slate-800 focus:bg-slate-800 rounded-lg cursor-pointer">XHHW (Aluminum)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Conduit Length for Nipple Detection */}
+              <Slider label="Conduit Length" value={conduitLength} onChange={setConduitLength} min={6} max={120} suffix='"' settings={settings}/>
+              
               <div className="space-y-3"> 
                 {wires.map((w,i)=>( 
                   <div key={i} className={`flex gap-3 items-center p-3 rounded-2xl border ${themeConfig.inset} animate-in slide-in-from-left-2 duration-200`}> 
-                    <div className={`text-[10px] font-black ${themeConfig.sub} flex-1`}>#{w.s} AWG THHN</div> 
+                    <div className={`text-[10px] font-black ${themeConfig.sub} flex-1`}>#{w.s} AWG {wireType}</div> 
                     <input type="number" className={`bg-transparent p-1 rounded-lg text-sm w-16 text-center font-bold outline-none ${themeConfig.text}`} value={w.c} onChange={(e)=>{const n=[...wires]; n[i].c=parseInt(e.target.value)||0; setWires(n);}} /> 
                     <button onClick={() => setWires(wires.filter((_,j)=>i!==j))} className="p-1 text-red-500 opacity-60 hover:opacity-100"><X size={16}/></button> 
                   </div> 
@@ -1229,9 +1351,9 @@ export default function App() {
               </div> 
             </div> 
             <div className={`${themeConfig.card} p-6 rounded-3xl shadow-xl`}>
-              <Result label="Fill Density" value={format(fillPct)} unit="%" highlight={fillPct > 40} theme={theme} settings={settings}/>
-              <Result label="Max Code Area" value={format(capArea * 0.4)} unit="in²" theme={theme} settings={settings}/>
-              <div className={`mt-3 text-center text-[10px] font-black uppercase tracking-widest ${fillPct > 40 ? 'text-red-500 animate-pulse' : 'text-green-500 opacity-60'}`}>{fillPct > 40 ? 'Violation - Undersized' : 'COMPLIANT'}</div>
+              <Result label="Fill Density" value={format(fillPct)} unit="%" highlight={isViolation} theme={theme} settings={settings}/>
+              <Result label={`Max Allowed (${allowedFillPct}%)`} value={format(maxAllowedArea)} unit="in²" theme={theme} settings={settings}/>
+              <div className={`mt-3 text-center text-[10px] font-black uppercase tracking-widest ${isViolation ? 'text-red-500 animate-pulse' : 'text-green-500 opacity-60'}`}>{isViolation ? 'Violation - Undersized' : 'COMPLIANT'}</div>
             </div>
             <div className="mt-4 flex justify-center">
               <button onClick={() => { vibrate(18); handleShare('BendIQ Calculation', getShareText()); }} className={`flex items-center gap-2 px-4 py-2 ${themeConfig.card} rounded-full shadow-md active:scale-95 transition-transform`}>
@@ -1240,10 +1362,37 @@ export default function App() {
               </button>
             </div>
           </div> 
-        ); 
+        );
       case 'bFill': 
-        const boxUsed = (w14 * 2) + (w12 * 2.25) + (dev * 4.5); 
-        const boxCapValue = BOX_DATA[selBox].vol; 
+        // NEC 314.16(B) calculations
+        const largestWireInBox = w10 > 0 ? '10' : (w12 > 0 ? '12' : '14');
+        const largestGroundVol = WIRE_VOLUME[largestGroundSize] || 2.0;
+        
+        // Wire counts
+        const wireVol14 = w14 * WIRE_VOLUME['14'];
+        const wireVol12 = w12 * WIRE_VOLUME['12'];
+        const wireVol10 = w10 * WIRE_VOLUME['10'];
+        
+        // Device volume = 2x largest wire connected
+        const deviceVol = dev * 2 * WIRE_VOLUME[largestWireInBox];
+        
+        // Clamps = 1x largest wire (if present)
+        const clampVol = hasClamps ? WIRE_VOLUME[largestWireInBox] : 0;
+        
+        // Grounds = 1x largest ground (all grounds count as one)
+        // NEC 2020/2023: if >4 grounds, add 1/4 volume for each additional
+        let groundVol = largestGroundVol;
+        if (groundCount > 4) {
+          groundVol += (groundCount - 4) * (largestGroundVol * 0.25);
+        }
+        
+        // Support fittings (hickeys, studs) = 1x each based on largest wire
+        const supportVol = supportFittings * WIRE_VOLUME[largestWireInBox];
+        
+        const boxUsed = wireVol14 + wireVol12 + wireVol10 + deviceVol + clampVol + groundVol + supportVol;
+        const boxCapValue = BOX_DATA[selBox].vol;
+        const isBoxViolation = boxUsed > boxCapValue;
+        
         return ( 
           <div className="animate-in fade-in duration-500"> 
             <div className="flex items-center justify-between mb-4"> 
@@ -1257,16 +1406,80 @@ export default function App() {
               </div> 
             </div> 
             <div id="box-visualizer"><Visualizer type="boxFill" data={{ used: boxUsed, cap: boxCapValue }} theme={theme}/></div> 
-            <div className={`${themeConfig.card} p-6 rounded-3xl mb-4 space-y-6 shadow-lg`}> 
+            
+            {/* NEC Info Panel */}
+            <div className={`${themeConfig.card} p-4 rounded-2xl mb-4 shadow-md`}>
+              <div className="flex items-center gap-2 mb-2">
+                <ShieldCheck size={14} className={themeConfig.accent} />
+                <span className={`text-[10px] font-black uppercase tracking-widest ${themeConfig.sub}`}>NEC Article 314.16</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-[9px]">
+                <div className={`p-2 rounded-lg ${themeConfig.inset}`}>
+                  <span className={themeConfig.sub}>Wires: </span>
+                  <span className={`font-bold ${themeConfig.text}`}>{format(wireVol14 + wireVol12 + wireVol10)} in³</span>
+                </div>
+                <div className={`p-2 rounded-lg ${themeConfig.inset}`}>
+                  <span className={themeConfig.sub}>Devices: </span>
+                  <span className={`font-bold ${themeConfig.text}`}>{format(deviceVol)} in³</span>
+                </div>
+                <div className={`p-2 rounded-lg ${themeConfig.inset}`}>
+                  <span className={themeConfig.sub}>Grounds: </span>
+                  <span className={`font-bold ${themeConfig.text}`}>{format(groundVol)} in³</span>
+                </div>
+                <div className={`p-2 rounded-lg ${themeConfig.inset}`}>
+                  <span className={themeConfig.sub}>Clamps: </span>
+                  <span className={`font-bold ${themeConfig.text}`}>{format(clampVol)} in³</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className={`${themeConfig.card} p-6 rounded-3xl mb-4 space-y-4 shadow-lg`}> 
               <select className={`${themeConfig.inset} w-full p-4 rounded-xl text-sm font-bold outline-none appearance-none border-none ${themeConfig.text}`} value={selBox} onChange={(e)=>setSelBox(parseInt(e.target.value))}>{BOX_DATA.map((b,i)=><option key={i} value={i}>{b.label}</option>)}</select> 
-              <Slider label="#14 Gauge (2.0)" value={w14} onChange={setW14} min={0} max={12} settings={settings}/> 
-              <Slider label="#12 Gauge (2.25)" value={w12} onChange={setW12} min={0} max={12} settings={settings}/> 
+              
+              <div className="border-t border-white/10 pt-4">
+                <span className={`text-[9px] font-black uppercase tracking-widest ${themeConfig.sub}`}>Conductors</span>
+              </div>
+              <Slider label="#14 AWG (2.0 in³)" value={w14} onChange={setW14} min={0} max={12} settings={settings}/> 
+              <Slider label="#12 AWG (2.25 in³)" value={w12} onChange={setW12} min={0} max={12} settings={settings}/> 
+              <Slider label="#10 AWG (2.5 in³)" value={w10} onChange={setW10} min={0} max={12} settings={settings}/> 
+              
+              <div className="border-t border-white/10 pt-4">
+                <span className={`text-[9px] font-black uppercase tracking-widest ${themeConfig.sub}`}>Devices & Equipment</span>
+              </div>
               <Slider label="Devices / Yokes" value={dev} onChange={setDev} min={0} max={4} settings={settings}/> 
+              <Slider label="Support Fittings (Hickeys)" value={supportFittings} onChange={setSupportFittings} min={0} max={2} settings={settings}/>
+              
+              <div className="border-t border-white/10 pt-4">
+                <span className={`text-[9px] font-black uppercase tracking-widest ${themeConfig.sub}`}>Grounding & Clamps</span>
+              </div>
+              <Slider label="Ground Conductors" value={groundCount} onChange={setGroundCount} min={0} max={8} settings={settings}/>
+              <div className="flex gap-2 items-center">
+                <Select value={largestGroundSize} onValueChange={setLargestGroundSize}>
+                  <SelectTrigger className={`flex-1 h-10 rounded-xl border-0 ${themeConfig.inset} ${themeConfig.text} text-xs font-bold`}>
+                    <SelectValue placeholder="Ground Size" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-slate-700 rounded-xl">
+                    {['14', '12', '10', '8', '6'].map(s => (
+                      <SelectItem key={s} value={s} className="text-white hover:bg-slate-800 focus:bg-slate-800 rounded-lg cursor-pointer">#{s} AWG</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex items-center justify-between p-3 rounded-xl border border-white/10">
+                <span className={`text-[10px] font-bold ${themeConfig.text}`}>Internal Clamps</span>
+                <button 
+                  onClick={() => setHasClamps(!hasClamps)} 
+                  className={`w-10 h-6 rounded-full transition-colors relative ${hasClamps ? 'bg-blue-600' : 'bg-slate-600'}`}
+                >
+                  <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${hasClamps ? 'translate-x-4' : ''}`}></div>
+                </button>
+              </div>
             </div> 
             <div className={`${themeConfig.card} p-6 rounded-3xl shadow-xl`}>
-              <Result label="Calculated" value={format(boxUsed)} unit="in³" highlight={boxUsed > boxCapValue} theme={theme} settings={settings}/>
+              <Result label="Calculated" value={format(boxUsed)} unit="in³" highlight={isBoxViolation} theme={theme} settings={settings}/>
               <Result label="Capacity" value={boxCapValue} unit="in³" theme={theme} settings={settings}/>
-              <div className={`mt-3 text-center text-[10px] font-black uppercase tracking-widest ${boxUsed > boxCapValue ? 'text-red-500 animate-pulse' : 'text-green-500 opacity-60'}`}>{boxUsed > boxCapValue ? 'Violation - Undersized' : 'COMPLIANT'}</div>
+              <div className={`mt-3 text-center text-[10px] font-black uppercase tracking-widest ${isBoxViolation ? 'text-red-500 animate-pulse' : 'text-green-500 opacity-60'}`}>{isBoxViolation ? 'Violation - Undersized' : 'COMPLIANT'}</div>
             </div>
             <div className="mt-4 flex justify-center">
               <button onClick={() => { vibrate(18); handleShare('BendIQ Calculation', getShareText()); }} className={`flex items-center gap-2 px-4 py-2 ${themeConfig.card} rounded-full shadow-md active:scale-95 transition-transform`}>
@@ -1275,7 +1488,7 @@ export default function App() {
               </button>
             </div>
           </div> 
-        ); 
+        );
       case 'projects': 
         const handleRename = (id: number, newName: string) => {
           setProjs(projs.map(p => p.id === id ? { ...p, t: newName } : p));
@@ -1286,7 +1499,7 @@ export default function App() {
         };
         return ( 
           <div className="animate-in fade-in duration-500"> 
-            <h2 className={`text-xl font-black ${themeConfig.text} uppercase tracking-tighter mb-6`}>Master Vault</h2> 
+            <h2 className={`text-xl font-black ${themeConfig.text} uppercase tracking-tighter mb-6`}>PROJECTS</h2> 
             {projs.length === 0 ? <div className="text-center py-20 text-slate-600 font-black uppercase tracking-widest text-[10px] opacity-40">Empty Archive</div> : ( 
               <div className="space-y-4">{projs.map(p => ( 
                 <div key={p.id} onClick={() => { if (renamingProject !== p.id) { vibrate(18); loadProject(p); } }} className={`${themeConfig.card} p-5 rounded-3xl flex justify-between items-center group cursor-pointer active:scale-98 shadow-md transition-all border hover:border-blue-500/50`}>
@@ -1350,7 +1563,7 @@ export default function App() {
         </div>
         
         <Dialog open={showImprint} onOpenChange={setShowImprint}>
-          <DialogContent className="bg-slate-900/80 backdrop-blur-xl border-white/20 max-w-md">
+          <DialogContent className="bg-slate-900/80 backdrop-blur-xl border-white/20 max-w-md rounded-2xl [&>button]:text-white">
             <DialogHeader>
               <DialogTitle className="font-sans text-white">Imprint</DialogTitle>
             </DialogHeader>
@@ -1364,7 +1577,7 @@ export default function App() {
         </Dialog>
         
         <Dialog open={showPrivacy} onOpenChange={setShowPrivacy}>
-          <DialogContent className="bg-slate-900/80 backdrop-blur-xl border-white/20 max-w-lg max-h-[80vh]">
+          <DialogContent className="bg-slate-900/80 backdrop-blur-xl border-white/20 max-w-lg max-h-[80vh] rounded-2xl [&>button]:text-white">
             <DialogHeader>
               <DialogTitle className="font-sans text-white">Privacy Policy</DialogTitle>
             </DialogHeader>

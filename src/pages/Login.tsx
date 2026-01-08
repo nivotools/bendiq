@@ -162,7 +162,7 @@ const Login = () => {
             alt="BendIQ Logo" 
             className="w-24 h-24 mx-auto mb-4 object-contain"
           />
-          <p className="text-slate-400 text-sm font-sans">Welcome to</p>
+          <p className="text-sm font-sans" style={{ color: '#64748B', letterSpacing: '0.1em' }}>Welcome to</p>
           <h1 className="text-3xl font-bold text-white font-sans tracking-wide">
             BEND<span style={{ color: '#3C83F6' }}>IQ</span>
           </h1>
@@ -366,7 +366,7 @@ const Login = () => {
 
       {/* Imprint Dialog */}
       <Dialog open={showImprint} onOpenChange={setShowImprint}>
-        <DialogContent className="bg-slate-900/80 backdrop-blur-xl border-white/20 max-w-md">
+        <DialogContent className="bg-slate-900/80 backdrop-blur-xl border-white/20 max-w-md rounded-2xl [&>button]:text-white">
           <DialogHeader>
             <DialogTitle className="text-white font-sans">Imprint</DialogTitle>
           </DialogHeader>
@@ -381,7 +381,7 @@ const Login = () => {
 
       {/* Privacy Policy Dialog */}
       <Dialog open={showPrivacy} onOpenChange={setShowPrivacy}>
-        <DialogContent className="bg-slate-900/80 backdrop-blur-xl border-white/20 max-w-lg max-h-[80vh]">
+        <DialogContent className="bg-slate-900/80 backdrop-blur-xl border-white/20 max-w-lg max-h-[80vh] rounded-2xl [&>button]:text-white">
           <DialogHeader>
             <DialogTitle className="text-white font-sans">Privacy Policy</DialogTitle>
           </DialogHeader>
