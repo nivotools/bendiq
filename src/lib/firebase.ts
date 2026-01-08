@@ -2,12 +2,12 @@ import { initializeApp, FirebaseApp } from 'firebase/app';
 import { getAuth, browserLocalPersistence, setPersistence, Auth } from 'firebase/auth';
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
+  apiKey: "AIzaSyDTA1sJ0rurDW90E0f_5epq2EiatjVTtjw",
+  authDomain: "bendiq-62c65.firebaseapp.com",
+  projectId: "bendiq-62c65",
+  storageBucket: "bendiq-62c65.firebasestorage.app",
+  messagingSenderId: "985415651642",
+  appId: "1:985415651642:web:314781bf40cadc25aa8003"
 };
 
 // Debug: Check if env variables are loaded
