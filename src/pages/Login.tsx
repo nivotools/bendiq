@@ -26,28 +26,62 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetSent, setResetSent] = useState(false);
   const [showImprint, setShowImprint] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
+  const [formVisible, setFormVisible] = useState(false);
   
   const { signIn, signUp, signInWithGoogle, resetPassword } = useAuth();
   const navigate = useNavigate();
 
+  // Trigger fade-in animation on mount
+  React.useEffect(() => {
+    const timer = setTimeout(() => setFormVisible(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const validateEmail = (value: string) => {
+    try {
+      emailSchema.parse(value);
+      setEmailError('');
+      return true;
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        setEmailError(err.errors[0].message);
+      }
+      return false;
+    }
+  };
+
+  const validatePassword = (value: string) => {
+    try {
+      passwordSchema.parse(value);
+      setPasswordError('');
+      return true;
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        setPasswordError(err.errors[0].message);
+      }
+      return false;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setEmailError('');
+    setPasswordError('');
 
-    try {
-      emailSchema.parse(email);
-      passwordSchema.parse(password);
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        setError(err.errors[0].message);
-        return;
-      }
+    const isEmailValid = validateEmail(email);
+    const isPasswordValid = validatePassword(password);
+
+    if (!isEmailValid || !isPasswordValid) {
+      return;
     }
 
     setLoading(true);
@@ -84,6 +118,8 @@ const Login = () => {
     } catch (err: any) {
       if (err.code === 'auth/popup-closed-by-user') {
         setError('Sign in was cancelled');
+      } else if (err.code === 'auth/unauthorized-domain') {
+        setError('This domain is not authorized. Please add this domain to your Firebase Console under Authentication > Settings > Authorized domains.');
       } else {
         setError(err.message || 'Failed to sign in with Google');
       }
@@ -118,7 +154,7 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 font-sans" style={{ backgroundColor: '#0B111E' }}>
-      <div className="w-full max-w-sm">
+      <div className={`w-full max-w-sm transition-all duration-500 ease-out ${formVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
         {/* Logo and Welcome */}
         <div className="text-center mb-8">
           <img 
@@ -136,7 +172,7 @@ const Login = () => {
         </div>
 
         {/* Auth Form */}
-        <div className="bg-slate-800/50 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl">
+        <div className={`bg-slate-800/50 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl transition-all duration-700 delay-200 ${formVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email" className="text-slate-300 text-sm font-sans">Email</Label>
@@ -144,10 +180,17 @@ const Login = () => {
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (emailError) validateEmail(e.target.value);
+                }}
+                onBlur={() => email && validateEmail(email)}
                 placeholder="Enter your email"
-                className="bg-slate-900/50 border-white/10 text-white placeholder:text-slate-500 font-sans"
+                className={`bg-slate-900/50 border-white/10 text-white placeholder:text-slate-500 font-sans ${emailError ? 'border-red-500' : ''}`}
               />
+              {emailError && (
+                <p className="text-red-400 text-xs font-sans animate-fade-in">{emailError}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -157,9 +200,13 @@ const Login = () => {
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (passwordError) validatePassword(e.target.value);
+                  }}
+                  onBlur={() => password && validatePassword(password)}
                   placeholder="Enter your password"
-                  className="bg-slate-900/50 border-white/10 text-white placeholder:text-slate-500 pr-10 font-sans"
+                  className={`bg-slate-900/50 border-white/10 text-white placeholder:text-slate-500 pr-10 font-sans ${passwordError ? 'border-red-500' : ''}`}
                 />
                 <button
                   type="button"
@@ -169,6 +216,9 @@ const Login = () => {
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
+              {passwordError && (
+                <p className="text-red-400 text-xs font-sans animate-fade-in">{passwordError}</p>
+              )}
             </div>
 
             {!isSignUp && (
