@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { CookieConsentProvider } from "./contexts/CookieConsentContext";
 import App from "./App.tsx";
 import Login from "./pages/Login.tsx";
 import "./index.css";
@@ -53,8 +54,10 @@ const AppRoutes = () => {
 
 createRoot(document.getElementById("root")!).render(
   <BrowserRouter>
-    <AuthProvider>
-      <AppRoutes />
-    </AuthProvider>
+    <CookieConsentProvider>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </CookieConsentProvider>
   </BrowserRouter>
 );

@@ -5,8 +5,10 @@ import {
   AlertCircle, ShieldCheck, Move, CornerDownRight, Save,
   FolderInput, Trash2, Package, Download, X, Zap, Pencil,
   FileText, Loader2, Sun, Moon, HardHat, Plus, RotateCcw,
-  Scale, CheckCircle2, Wand2, AlertTriangle, Settings, Mic, Type, MousePointerClick, Flashlight, Share2, Lightbulb
+  Scale, CheckCircle2, Wand2, AlertTriangle, Settings, Mic, Type, MousePointerClick, Flashlight, Share2, Lightbulb, Cookie
 } from 'lucide-react';
+import { ConsentBanner, PreferencesModal } from '@/components/CookieConsent';
+import { useCookieConsent } from '@/contexts/CookieConsentContext';
 import BenderIQView from '@/components/BenderIQ/BenderIQView';
 import DictionaryView from '@/components/BenderIQ/DictionaryView';
 import ProTipsView from '@/components/BenderIQ/ProTipsView';
@@ -615,6 +617,7 @@ const SettingsModal = ({ onClose, onClear, onDelete, settings, setSettings, them
 
 export default function App() { 
   const { logout, clearAllUserData, deleteAccount } = useAuth();
+  const { openPreferencesModal: openCookiePreferences } = useCookieConsent();
   const navigate = typeof window !== 'undefined' ? () => window.location.href = '/login' : () => {};
   const [activeTab, setActiveTab] = useState('bending');
   const [bendType, setBendType] = useState('offset'); 
@@ -1933,7 +1936,21 @@ export default function App() {
           </button> 
         ))}
       </div>
-      <div className={`fixed bottom-28 left-1/2 -translate-x-1/2 ${themeConfig.card} border px-6 py-3 rounded-full shadow-2xl transition-all duration-500 z-50 backdrop-blur-md flex items-center gap-3 ${toast.s ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}><ShieldCheck size={16} className={themeConfig.accent}/><span className={`text-[10px] font-black uppercase tracking-widest ${theme === 'light' ? 'text-black' : 'text-white'}`}>{toast.m}</span></div> 
+      <div className={`fixed bottom-28 left-1/2 -translate-x-1/2 ${themeConfig.card} border px-6 py-3 rounded-full shadow-2xl transition-all duration-500 z-50 backdrop-blur-md flex items-center gap-3 ${toast.s ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}><ShieldCheck size={16} className={themeConfig.accent}/><span className={`text-[10px] font-black uppercase tracking-widest ${theme === 'light' ? 'text-black' : 'text-white'}`}>{toast.m}</span></div>
+      
+      {/* Cookie Consent Components */}
+      <ConsentBanner />
+      <PreferencesModal />
+      
+      {/* Floating Cookie Preferences Button (GDPR withdrawal requirement) */}
+      <button
+        onClick={openCookiePreferences}
+        className="fixed bottom-6 left-6 z-40 p-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-full shadow-lg transition-all hover:scale-110 group"
+        aria-label="Cookie preferences"
+        title="Manage cookie preferences"
+      >
+        <Cookie className="w-5 h-5 text-slate-300 group-hover:text-blue-400 transition-colors" />
+      </button>
     </div> 
   ); 
 }
