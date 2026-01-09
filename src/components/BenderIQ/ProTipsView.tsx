@@ -6,9 +6,10 @@ interface ProTipsViewProps {
   theme: string;
   themeConfig: any;
   onBack: () => void;
+  onTipExpand: (tipId: string) => void;
 }
 
-const ProTipsView: React.FC<ProTipsViewProps> = ({ theme, themeConfig, onBack }) => {
+const ProTipsView: React.FC<ProTipsViewProps> = ({ theme, themeConfig, onBack, onTipExpand }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [expandedTip, setExpandedTip] = useState<string | null>(null);
@@ -41,6 +42,13 @@ const ProTipsView: React.FC<ProTipsViewProps> = ({ theme, themeConfig, onBack })
     });
     return groups;
   }, [filteredTips]);
+
+  const handleTipClick = (tipId: string) => {
+    if (expandedTip !== tipId) {
+      onTipExpand(tipId);
+    }
+    setExpandedTip(expandedTip === tipId ? null : tipId);
+  };
 
   return (
     <div className="animate-in fade-in duration-500">
@@ -122,7 +130,7 @@ const ProTipsView: React.FC<ProTipsViewProps> = ({ theme, themeConfig, onBack })
                   className={`${themeConfig.card} rounded-2xl shadow-sm border overflow-hidden transition-all ${theme === 'light' ? 'border-slate-100' : 'border-white/5'}`}
                 >
                   <button
-                    onClick={() => setExpandedTip(expandedTip === tip.id ? null : tip.id)}
+                    onClick={() => handleTipClick(tip.id)}
                     className="w-full p-4 text-left flex items-start justify-between gap-3"
                   >
                     <div className="flex-1">

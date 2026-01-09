@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIQSystem } from "@/hooks/useIQSystem";
 import bendiqLogo from "@/assets/bendiq-logo.png";
 import bendiqLogoPdf from "@/assets/bendiq-logo-pdf.png";
 import bendiqTextPdf from "@/assets/bendiq-text.png";
@@ -567,6 +568,14 @@ export default function App() {
   const [flashlightOn, setFlashlightOn] = useState(false);
   const [benderIQSubView, setBenderIQSubView] = useState<'dictionary' | 'proTips' | 'quickTips' | null>(null);
   const [showMotivation, setShowMotivation] = useState(true);
+  
+  // IQ System hook for gamification
+  const { 
+    score: iqScore, 
+    addQuestionPoints, 
+    addDictionaryPoints, 
+    addSearchResultPoints 
+  } = useIQSystem();
   
   // Motivational messages array
   const motivationalMessages = [
@@ -1584,10 +1593,20 @@ export default function App() {
         );
       case 'benderIQ':
         if (benderIQSubView === 'dictionary') {
-          return <DictionaryView onBack={() => setBenderIQSubView(null)} theme={theme} themeConfig={themeConfig} />;
+          return <DictionaryView 
+            onBack={() => setBenderIQSubView(null)} 
+            theme={theme} 
+            themeConfig={themeConfig} 
+            onTermClick={addDictionaryPoints}
+          />;
         }
         if (benderIQSubView === 'proTips') {
-          return <ProTipsView onBack={() => setBenderIQSubView(null)} theme={theme} themeConfig={themeConfig} />;
+          return <ProTipsView 
+            onBack={() => setBenderIQSubView(null)} 
+            theme={theme} 
+            themeConfig={themeConfig} 
+            onTipExpand={addQuestionPoints}
+          />;
         }
         if (benderIQSubView === 'quickTips') {
           return <QuickTipsView onBack={() => setBenderIQSubView(null)} theme={theme} themeConfig={themeConfig} />;
@@ -1597,6 +1616,9 @@ export default function App() {
             theme={theme} 
             themeConfig={themeConfig}
             onNavigate={(view) => setBenderIQSubView(view)}
+            iqScore={iqScore}
+            onExpandQuestion={addQuestionPoints}
+            onSearchResultClick={addSearchResultPoints}
           />
         );
       case 'projects': 

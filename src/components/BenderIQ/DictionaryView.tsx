@@ -6,9 +6,10 @@ interface DictionaryViewProps {
   theme: string;
   themeConfig: any;
   onBack: () => void;
+  onTermClick: (termId: string) => void;
 }
 
-const DictionaryView: React.FC<DictionaryViewProps> = ({ theme, themeConfig, onBack }) => {
+const DictionaryView: React.FC<DictionaryViewProps> = ({ theme, themeConfig, onBack, onTermClick }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
@@ -40,6 +41,10 @@ const DictionaryView: React.FC<DictionaryViewProps> = ({ theme, themeConfig, onB
     });
     return groups;
   }, [filteredTerms]);
+
+  const handleTermClick = (termId: string) => {
+    onTermClick(termId);
+  };
 
   return (
     <div className="animate-in fade-in duration-500">
@@ -118,7 +123,8 @@ const DictionaryView: React.FC<DictionaryViewProps> = ({ theme, themeConfig, onB
               {terms.map(term => (
                 <div 
                   key={term.id} 
-                  className={`${themeConfig.card} p-4 rounded-2xl shadow-sm border ${theme === 'light' ? 'border-slate-100' : 'border-white/5'}`}
+                  className={`${themeConfig.card} p-4 rounded-2xl shadow-sm border ${theme === 'light' ? 'border-slate-100' : 'border-white/5'} cursor-pointer hover:border-blue-500/50 transition-colors`}
+                  onClick={() => handleTermClick(term.id)}
                 >
                   <h4 className={`text-sm font-bold ${themeConfig.text} mb-1`}>{term.term}</h4>
                   <p className={`text-xs ${themeConfig.sub} leading-relaxed`}>{term.definition}</p>

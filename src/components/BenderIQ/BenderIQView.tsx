@@ -1,14 +1,18 @@
 import React, { useState, useMemo } from 'react';
-import { Lightbulb as LightbulbIcon, ChevronDown, ChevronUp, Search, Book, Lightbulb, Zap, X } from 'lucide-react';
+import { Lightbulb as LightbulbIcon, ChevronDown, Search, Book, Lightbulb, Zap, X } from 'lucide-react';
 import { getQuestionOfTheDay } from '@/data/dailyQuestions';
 import { dictionaryData } from '@/data/dictionaryData';
 import { proTipsData } from '@/data/proTipsData';
 import { quickTipsData } from '@/data/quickTipsData';
+import IQMeter from './IQMeter';
 
 interface BenderIQViewProps {
   theme: string;
   themeConfig: any;
   onNavigate: (view: 'dictionary' | 'proTips' | 'quickTips') => void;
+  iqScore: number;
+  onExpandQuestion: (questionId: string) => void;
+  onSearchResultClick: (resultId: string) => void;
 }
 
 interface SearchResult {
@@ -18,7 +22,14 @@ interface SearchResult {
   preview: string;
 }
 
-const BenderIQView: React.FC<BenderIQViewProps> = ({ theme, themeConfig, onNavigate }) => {
+const BenderIQView: React.FC<BenderIQViewProps> = ({ 
+  theme, 
+  themeConfig, 
+  onNavigate, 
+  iqScore,
+  onExpandQuestion,
+  onSearchResultClick
+}) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showResults, setShowResults] = useState(false);
@@ -127,9 +138,17 @@ const BenderIQView: React.FC<BenderIQViewProps> = ({ theme, themeConfig, onNavig
   }, [searchQuery]);
 
   const handleResultClick = (result: SearchResult) => {
+    onSearchResultClick(`${result.type}-${result.id}`);
     setShowResults(false);
     setSearchQuery('');
     onNavigate(result.type);
+  };
+
+  const handleQuestionExpand = () => {
+    if (!isExpanded) {
+      onExpandQuestion(`qotd-${questionOfDay.id}`);
+    }
+    setIsExpanded(!isExpanded);
   };
 
   return (
@@ -144,10 +163,13 @@ const BenderIQView: React.FC<BenderIQViewProps> = ({ theme, themeConfig, onNavig
         </div>
       </div>
 
+      {/* IQ Meter */}
+      <IQMeter score={iqScore} theme={theme} themeConfig={themeConfig} />
+
       {/* Element A: Question of the Day */}
       <div 
         className={`${themeConfig.card} p-5 rounded-3xl mb-6 shadow-lg cursor-pointer transition-all duration-300 border hover:border-blue-500/50`}
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={handleQuestionExpand}
       >
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1">
