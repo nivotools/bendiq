@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Brain, ChevronDown, ChevronUp, Search, Book, Lightbulb, Zap, X } from 'lucide-react';
+import { Lightbulb as LightbulbIcon, ChevronDown, ChevronUp, Search, Book, Lightbulb, Zap, X } from 'lucide-react';
 import { getQuestionOfTheDay } from '@/data/dailyQuestions';
 import { dictionaryData } from '@/data/dictionaryData';
 import { proTipsData } from '@/data/proTipsData';
@@ -81,9 +81,9 @@ const BenderIQView: React.FC<BenderIQViewProps> = ({ theme, themeConfig, onNavig
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <Brain size={24} className="text-blue-500" />
+          <LightbulbIcon size={24} className="text-blue-500" />
           <h2 className={`text-xl font-black ${themeConfig.text} uppercase tracking-tighter`}>
-            BENDER <span className="text-white">IQ</span>
+            BENDER'S <span className={theme === 'light' ? 'text-black' : 'text-white'}>IQ</span>
           </h2>
         </div>
       </div>
