@@ -25,15 +25,71 @@ const BenderIQView: React.FC<BenderIQViewProps> = ({ theme, themeConfig, onNavig
 
   const questionOfDay = useMemo(() => getQuestionOfTheDay(), []);
 
+  // Fuzzy search function - allows for typos by computing Levenshtein distance
+  const fuzzyMatch = (text: string, query: string, threshold: number = 3): boolean => {
+    const textLower = text.toLowerCase();
+    const queryLower = query.toLowerCase();
+    
+    // Exact or substring match
+    if (textLower.includes(queryLower)) return true;
+    
+    // Check each word in the text for fuzzy match
+    const textWords = textLower.split(/\s+/);
+    const queryWords = queryLower.split(/\s+/);
+    
+    for (const queryWord of queryWords) {
+      if (queryWord.length < 2) continue;
+      
+      for (const textWord of textWords) {
+        // Levenshtein distance calculation
+        const distance = levenshteinDistance(queryWord, textWord);
+        const maxLen = Math.max(queryWord.length, textWord.length);
+        // Allow more tolerance for longer words
+        const adjustedThreshold = Math.min(threshold, Math.floor(maxLen * 0.4));
+        if (distance <= adjustedThreshold) return true;
+      }
+    }
+    
+    return false;
+  };
+
+  // Levenshtein distance algorithm for fuzzy matching
+  const levenshteinDistance = (a: string, b: string): number => {
+    const matrix: number[][] = [];
+    
+    for (let i = 0; i <= b.length; i++) {
+      matrix[i] = [i];
+    }
+    for (let j = 0; j <= a.length; j++) {
+      matrix[0][j] = j;
+    }
+    
+    for (let i = 1; i <= b.length; i++) {
+      for (let j = 1; j <= a.length; j++) {
+        if (b.charAt(i - 1) === a.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1,
+            matrix[i][j - 1] + 1,
+            matrix[i - 1][j] + 1
+          );
+        }
+      }
+    }
+    
+    return matrix[b.length][a.length];
+  };
+
   const searchResults = useMemo((): SearchResult[] => {
     if (!searchQuery.trim()) return [];
     
     const query = searchQuery.toLowerCase();
     const results: SearchResult[] = [];
 
-    // Search dictionary
+    // Search dictionary with fuzzy matching
     dictionaryData.forEach(item => {
-      if (item.term.toLowerCase().includes(query) || item.definition.toLowerCase().includes(query)) {
+      if (fuzzyMatch(item.term, query) || fuzzyMatch(item.definition, query)) {
         results.push({
           type: 'dictionary',
           id: item.id,
@@ -43,9 +99,9 @@ const BenderIQView: React.FC<BenderIQViewProps> = ({ theme, themeConfig, onNavig
       }
     });
 
-    // Search pro tips
+    // Search pro tips with fuzzy matching
     proTipsData.forEach(item => {
-      if (item.question.toLowerCase().includes(query) || item.answer.toLowerCase().includes(query)) {
+      if (fuzzyMatch(item.question, query) || fuzzyMatch(item.answer, query)) {
         results.push({
           type: 'proTips',
           id: item.id,
@@ -55,9 +111,9 @@ const BenderIQView: React.FC<BenderIQViewProps> = ({ theme, themeConfig, onNavig
       }
     });
 
-    // Search quick tips
+    // Search quick tips with fuzzy matching
     quickTipsData.forEach(item => {
-      if (item.tip.toLowerCase().includes(query)) {
+      if (fuzzyMatch(item.tip, query)) {
         results.push({
           type: 'quickTips',
           id: item.id,
@@ -179,7 +235,7 @@ const BenderIQView: React.FC<BenderIQViewProps> = ({ theme, themeConfig, onNavig
         {/* Dictionary Button */}
         <button
           onClick={() => onNavigate('dictionary')}
-          className="flex items-center gap-4 p-5 rounded-2xl bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg active:scale-98 transition-transform"
+          className="flex items-center gap-4 p-5 rounded-2xl bg-gradient-to-r from-blue-600/80 to-blue-700/80 text-white shadow-lg active:scale-98 transition-transform"
         >
           <div className="p-3 bg-white/20 rounded-xl">
             <Book size={24} />
@@ -194,7 +250,7 @@ const BenderIQView: React.FC<BenderIQViewProps> = ({ theme, themeConfig, onNavig
         {/* Pro Tips Button */}
         <button
           onClick={() => onNavigate('proTips')}
-          className="flex items-center gap-4 p-5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg active:scale-98 transition-transform"
+          className="flex items-center gap-4 p-5 rounded-2xl bg-gradient-to-r from-amber-500/80 to-orange-500/80 text-white shadow-lg active:scale-98 transition-transform"
         >
           <div className="p-3 bg-white/20 rounded-xl">
             <Lightbulb size={24} />
@@ -209,7 +265,7 @@ const BenderIQView: React.FC<BenderIQViewProps> = ({ theme, themeConfig, onNavig
         {/* 3-Second Tips Button */}
         <button
           onClick={() => onNavigate('quickTips')}
-          className="flex items-center gap-4 p-5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg active:scale-98 transition-transform"
+          className="flex items-center gap-4 p-5 rounded-2xl bg-gradient-to-r from-emerald-500/80 to-teal-500/80 text-white shadow-lg active:scale-98 transition-transform"
         >
           <div className="p-3 bg-white/20 rounded-xl">
             <Zap size={24} />
