@@ -505,11 +505,11 @@ const LevelModal = ({ targetAngle, onClose, themeConfig, theme }) => {
     </div>
   ); 
 };
-const SettingsModal = ({ onClose, onClear, onDelete, settings, setSettings, themeConfig, theme }) => { 
+const SettingsModal = ({ onClose, onClear, onDelete, settings, setSettings, themeConfig, theme, isClearing, isDeleting, showDeleteConfirm, setShowDeleteConfirm, deletePassword, setDeletePassword, onConfirmDelete }) => { 
   const isLight = theme === 'light';
   return (
     <div className={`fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-[100] p-6`}>
-      <div className={`${themeConfig.card} p-8 rounded-3xl w-full max-w-sm shadow-2xl space-y-8`}>
+      <div className={`${themeConfig.card} p-8 rounded-3xl w-full max-w-sm shadow-2xl space-y-8 max-h-[90vh] overflow-y-auto`}>
         <div className="flex justify-between items-center">
           <h2 className={`text-lg font-black uppercase tracking-widest ${themeConfig.text}`}>Settings</h2>
           <button onClick={onClose} className={`p-2 ${isLight ? 'bg-slate-200 hover:bg-slate-300' : 'bg-white/10 hover:bg-white/20'} rounded-full`}><X size={20} className={themeConfig.text} /></button>
@@ -537,13 +537,73 @@ const SettingsModal = ({ onClose, onClear, onDelete, settings, setSettings, them
         <div>
           <h3 className={`text-[11px] font-black uppercase tracking-widest ${themeConfig.sub} mb-4`}>Data Management</h3>
           <div className="flex justify-center w-full">
-            <button onClick={onClear} className="w-full p-4 rounded-xl bg-red-500/10 text-red-500 border border-red-500/50 text-xs font-black uppercase hover:bg-red-500 hover:text-white transition-colors">Clear All Data</button>
+            <button 
+              onClick={onClear} 
+              disabled={isClearing}
+              className="w-full p-4 rounded-xl bg-red-500/10 text-red-500 border border-red-500/50 text-xs font-black uppercase hover:bg-red-500 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {isClearing ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  Clearing...
+                </>
+              ) : 'Clear All Data'}
+            </button>
           </div>
         </div>
         <div>
           <h3 className={`text-[11px] font-black uppercase tracking-widest text-red-500 mb-4`}>Account Management</h3>
-          <button onClick={onDelete} className="w-full p-4 rounded-xl bg-red-500 text-white font-black uppercase tracking-widest text-xs hover:bg-red-600 transition-colors"> Delete My Account </button>
-          <p className={`text-[10px] ${themeConfig.sub} mt-2 text-center`}>Permanently delete your account and all data.</p>
+          
+          {showDeleteConfirm ? (
+            <div className="space-y-3">
+              <p className={`text-[10px] ${themeConfig.sub} text-center mb-2`}>
+                For security, please re-enter your password to confirm account deletion:
+              </p>
+              <input
+                type="password"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+                placeholder="Enter your password"
+                className={`w-full p-3 rounded-xl border ${isLight ? 'border-slate-300 bg-white text-slate-900' : 'border-slate-600 bg-slate-800 text-white'} text-sm focus:outline-none focus:ring-2 focus:ring-red-500`}
+              />
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => { setShowDeleteConfirm(false); setDeletePassword(''); }}
+                  className={`flex-1 p-3 rounded-xl ${isLight ? 'bg-slate-200 text-slate-700' : 'bg-slate-700 text-white'} text-xs font-bold uppercase`}
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={onConfirmDelete}
+                  disabled={isDeleting || !deletePassword}
+                  className="flex-1 p-3 rounded-xl bg-red-500 text-white text-xs font-bold uppercase hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" />
+                      Deleting...
+                    </>
+                  ) : 'Confirm Delete'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <button 
+                onClick={onDelete} 
+                disabled={isDeleting}
+                className="w-full p-4 rounded-xl bg-red-500 text-white font-black uppercase tracking-widest text-xs hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    Deleting...
+                  </>
+                ) : 'Delete My Account'}
+              </button>
+              <p className={`text-[10px] ${themeConfig.sub} mt-2 text-center`}>Permanently delete your account and all data.</p>
+            </>
+          )}
         </div>
         <div className={`text-[8px] ${themeConfig.sub} text-center opacity-60`}>
           Legal Disclaimer: All calculations provided by this app are for informational purposes only. Use results at your own risk. The developer assumes no liability for any physical damage, personal injury, or consequential losses resulting from the use of this application.
@@ -554,7 +614,8 @@ const SettingsModal = ({ onClose, onClear, onDelete, settings, setSettings, them
 };
 
 export default function App() { 
-  const { logout } = useAuth();
+  const { logout, clearAllUserData, deleteAccount } = useAuth();
+  const navigate = typeof window !== 'undefined' ? () => window.location.href = '/login' : () => {};
   const [activeTab, setActiveTab] = useState('bending');
   const [bendType, setBendType] = useState('offset'); 
   const [theme, setTheme] = useState('dark'); 
@@ -568,6 +629,10 @@ export default function App() {
   const [flashlightOn, setFlashlightOn] = useState(false);
   const [benderIQSubView, setBenderIQSubView] = useState<'dictionary' | 'proTips' | 'quickTips' | null>(null);
   const [showMotivation, setShowMotivation] = useState(true);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
   
   // IQ System hook for gamification
   const { 
@@ -896,17 +961,56 @@ export default function App() {
     setToast({ s: true, m: `Added #${gauge} Conductor` });
     setTimeout(() => setToast({ s: false, m: "" }), 1500);
   };
-  const handleClearData = () => {
-    setProjs([]);
-    setToast({ s: true, m: "All Data Cleared" });
-    setTimeout(() => setToast({ s: false, m: "" }), 2000);
+  const handleClearData = async () => {
+    setIsClearing(true);
+    try {
+      await clearAllUserData();
+      setProjs([]);
+      setToast({ s: true, m: "All data cleared successfully" });
+    } catch (error: any) {
+      console.error('Error clearing data:', error);
+      setToast({ s: true, m: error.message || "Failed to clear data" });
+    } finally {
+      setIsClearing(false);
+      setTimeout(() => setToast({ s: false, m: "" }), 2000);
+    }
   };
-  const handleDeleteAccount = () => {
-    setProjs([]);
-    setSettings({ voice: false, dyslexic: false, largeTargets: false });
-    setToast({ s: true, m: "Account Deleted" });
-    setShowSettings(false);
-    setTimeout(() => setToast({ s: false, m: "" }), 2000);
+  
+  const handleDeleteAccount = async (password?: string) => {
+    setIsDeleting(true);
+    try {
+      const result = await deleteAccount(password);
+      
+      if (result.requiresReauth) {
+        setShowDeleteConfirm(true);
+        setToast({ s: true, m: result.error || "Please re-enter your password" });
+        setTimeout(() => setToast({ s: false, m: "" }), 3000);
+      } else if (result.success) {
+        setProjs([]);
+        setSettings({ voice: false, dyslexic: false, largeTargets: false });
+        setShowSettings(false);
+        setShowDeleteConfirm(false);
+        setToast({ s: true, m: "Account deleted successfully" });
+        setTimeout(() => {
+          setToast({ s: false, m: "" });
+          window.location.href = '/login';
+        }, 2000);
+      } else {
+        setToast({ s: true, m: result.error || "Failed to delete account" });
+        setTimeout(() => setToast({ s: false, m: "" }), 3000);
+      }
+    } catch (error: any) {
+      console.error('Error deleting account:', error);
+      setToast({ s: true, m: error.message || "Failed to delete account" });
+      setTimeout(() => setToast({ s: false, m: "" }), 3000);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+  
+  const handleConfirmDelete = async () => {
+    await handleDeleteAccount(deletePassword);
+    setDeletePassword('');
   };
   const exportPDF = async (p) => {
     setIsExporting(true);
@@ -1516,19 +1620,19 @@ export default function App() {
                 <span className={`text-[10px] font-black uppercase tracking-widest ${themeConfig.sub}`}>NEC Article 314.16</span>
               </div>
               <div className="grid grid-cols-2 gap-2 text-[9px]">
-                <div className={`p-2 rounded-lg ${themeConfig.inset}`}>
+                <div className={`p-2 rounded-2xl ${themeConfig.inset}`}>
                   <span className={themeConfig.sub}>Wires: </span>
                   <span className={`font-bold ${themeConfig.text}`}>{format(wireVol14 + wireVol12 + wireVol10)} in³</span>
                 </div>
-                <div className={`p-2 rounded-lg ${themeConfig.inset}`}>
+                <div className={`p-2 rounded-2xl ${themeConfig.inset}`}>
                   <span className={themeConfig.sub}>Devices: </span>
                   <span className={`font-bold ${themeConfig.text}`}>{format(deviceVol)} in³</span>
                 </div>
-                <div className={`p-2 rounded-lg ${themeConfig.inset}`}>
+                <div className={`p-2 rounded-2xl ${themeConfig.inset}`}>
                   <span className={themeConfig.sub}>Grounds: </span>
                   <span className={`font-bold ${themeConfig.text}`}>{format(groundVol)} in³</span>
                 </div>
-                <div className={`p-2 rounded-lg ${themeConfig.inset}`}>
+                <div className={`p-2 rounded-2xl ${themeConfig.inset}`}>
                   <span className={themeConfig.sub}>Clamps: </span>
                   <span className={`font-bold ${themeConfig.text}`}>{format(clampVol)} in³</span>
                 </div>
@@ -1557,18 +1661,18 @@ export default function App() {
               <Slider label="Ground Conductors" value={groundCount} onChange={setGroundCount} min={0} max={8} settings={settings} theme={theme}/>
               <div className="flex gap-2 items-center">
                 <Select value={largestGroundSize} onValueChange={setLargestGroundSize}>
-                  <SelectTrigger className={`flex-1 h-10 rounded-xl border-0 ${themeConfig.inset} ${themeConfig.text} text-xs font-bold`}>
+                  <SelectTrigger className={`flex-1 h-10 rounded-2xl border-0 ${themeConfig.inset} ${themeConfig.text} text-xs font-bold`}>
                     <SelectValue placeholder="Ground Size" />
                   </SelectTrigger>
-                  <SelectContent className="bg-slate-900 border-slate-700 rounded-xl">
+                  <SelectContent className="bg-slate-900 border-slate-700 rounded-2xl">
                     {['14', '12', '10', '8', '6'].map(s => (
-                      <SelectItem key={s} value={s} className="text-white hover:bg-slate-800 focus:bg-slate-800 rounded-lg cursor-pointer">#{s} AWG</SelectItem>
+                      <SelectItem key={s} value={s} className="text-white hover:bg-slate-800 focus:bg-slate-800 rounded-xl cursor-pointer">#{s} AWG</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               
-              <div className="flex items-center justify-between p-3 rounded-xl border border-white/10">
+              <div className="flex items-center justify-between p-3 rounded-2xl border border-white/10">
                 <span className={`text-[10px] font-bold ${themeConfig.text}`}>Internal Clamps</span>
                 <button 
                   onClick={() => setHasClamps(!hasClamps)} 
@@ -1577,7 +1681,7 @@ export default function App() {
                   <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${hasClamps ? 'translate-x-4' : ''}`}></div>
                 </button>
               </div>
-            </div> 
+            </div>
             <div className={`${themeConfig.card} p-6 rounded-3xl shadow-xl`}>
               <Result label="Calculated" value={format(boxUsed)} unit="in³" highlight={isBoxViolation} theme={theme} settings={settings}/>
               <Result label="Capacity" value={boxCapValue} unit="in³" theme={theme} settings={settings}/>
@@ -1790,8 +1894,23 @@ export default function App() {
         <LevelModal targetAngle={bendType === 'segmented' ? (a / n) : a} onClose={() => setIsLevelActive(false)} themeConfig={themeConfig} theme={theme} /> 
       )} 
       {showSettings && ( 
-        <SettingsModal onClose={() => setShowSettings(false)} onClear={handleClearData} onDelete={handleDeleteAccount} settings={settings} setSettings={setSettings} themeConfig={themeConfig} theme={theme} /> 
-      )} 
+        <SettingsModal 
+          onClose={() => setShowSettings(false)} 
+          onClear={handleClearData} 
+          onDelete={() => handleDeleteAccount()} 
+          settings={settings} 
+          setSettings={setSettings} 
+          themeConfig={themeConfig} 
+          theme={theme}
+          isClearing={isClearing}
+          isDeleting={isDeleting}
+          showDeleteConfirm={showDeleteConfirm}
+          setShowDeleteConfirm={setShowDeleteConfirm}
+          deletePassword={deletePassword}
+          setDeletePassword={setDeletePassword}
+          onConfirmDelete={handleConfirmDelete}
+        /> 
+      )}
       <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md h-20 ${theme === 'light' ? 'bg-slate-50 border-slate-200 shadow-xl' : 'bg-slate-900 border-white/5'} backdrop-blur-xl border rounded-[2.5rem] px-6 flex items-center justify-around z-50 shadow-2xl`}> 
         {[
           {id:'bending',icon:Move,l:'Bends'},
