@@ -5,7 +5,7 @@ import {
   AlertCircle, ShieldCheck, Move, CornerDownRight, Save,
   FolderInput, Trash2, Package, Download, X, Zap, Pencil,
   FileText, Loader2, Sun, Moon, HardHat, Plus, RotateCcw,
-  Scale, CheckCircle2, Wand2, AlertTriangle, Settings, Mic, Type, MousePointerClick, Flashlight, Share2, Brain
+  Scale, CheckCircle2, Wand2, AlertTriangle, Settings, Mic, Type, MousePointerClick, Flashlight, Share2, Lightbulb
 } from 'lucide-react';
 import BenderIQView from '@/components/BenderIQ/BenderIQView';
 import DictionaryView from '@/components/BenderIQ/DictionaryView';
@@ -154,13 +154,13 @@ const Result = ({ label, value, unit="", highlight=false, theme, settings, isShr
     {label} <span className="font-mono font-black">{value}{unit}</span>
   </div>
 );
-const Slider = ({ label, value, onChange, min, max, step=1, suffix="", settings }) => (
+const Slider = ({ label, value, onChange, min, max, step=1, suffix="", settings, theme = 'dark' }) => (
   <div className="flex flex-col gap-1 mb-4">
     <div className="flex justify-between items-end px-1 mb-1">
       <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">{label}</label>
-      <span className="text-sm text-blue-500 font-mono font-bold leading-none">{value}{suffix}</span>
+      <span className={`text-sm ${theme === 'construction' ? 'text-yellow-500' : 'text-blue-500'} font-mono font-bold leading-none`}>{value}{suffix}</span>
     </div>
-    <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => { vibrate(8); onChange(parseFloat(e.target.value)); }} className={`w-full ${settings.largeTargets ? 'h-4' : 'h-1.5'} bg-slate-800 rounded-full appearance-none accent-blue-600 cursor-pointer shadow-inner`} />
+    <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => { vibrate(8); onChange(parseFloat(e.target.value)); }} className={`w-full ${settings.largeTargets ? 'h-4' : 'h-1.5'} bg-slate-800 rounded-full appearance-none ${theme === 'construction' ? 'accent-yellow-500' : 'accent-blue-600'} cursor-pointer shadow-inner`} />
   </div>
 );
 const WarningBox = ({ warnings, theme }) => { 
@@ -223,10 +223,11 @@ const Visualizer = ({ type, data, isForExport = false, theme = 'dark' }) => {
         const h = getVal(data.h, 10), a = Math.max(1, getVal(data.a, 30));
         const run = h / Math.tan(toRad(a));
         const strokeWidth = 5;
-        const buffer = strokeWidth / 2 + 1; // Half stroke + 1px buffer for "kissing" effect
-        const pts = [{x:0,y:buffer}, {x:25,y:buffer}, {x:25+run,y:h+buffer}, {x:60+run,y:h+buffer}];
-        // Obstacle: rectangle under the upper run representing floor/surface difference
-        const obstacle = {x: 25+run-5, y: 0, w: 40, h: h};
+        const buffer = strokeWidth / 2 + 2; // Half stroke + 2px buffer for proper clearance
+        const pts = [{x:0,y:buffer}, {x:25,y:buffer}, {x:25+run,y:h+buffer}, {x:70+run,y:h+buffer}];
+        // Obstacle: rectangle positioned to NOT overlap with conduit - starts after the bend ends
+        const obstacleStartX = 25 + run + 5; // Start obstacle 5px after the second bend point
+        const obstacle = {x: obstacleStartX, y: 0, w: 35, h: h};
         return { pts, marks: [{...pts[1], l:"1"}, {...pts[2], l:"2"}], dims: <Dim x1={25} y1={0} x2={25+run} y2={0} label={`D: ${format(run)}"`} />, obstacle, vb: calcBounds(pts, 90) };
       }
       case 'saddle3': {
@@ -564,6 +565,64 @@ export default function App() {
   const [showImprint, setShowImprint] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [flashlightOn, setFlashlightOn] = useState(false);
+  const [benderIQSubView, setBenderIQSubView] = useState<'dictionary' | 'proTips' | 'quickTips' | null>(null);
+  const [showMotivation, setShowMotivation] = useState(true);
+  
+  // Motivational messages array
+  const motivationalMessages = [
+    "Hi, you got this!",
+    "Let's get bending!",
+    "You can do this!",
+    "Time to shine!",
+    "Make it happen!",
+    "Ready? Let's go!",
+    "Precision is key!",
+    "Stay focused!",
+    "Crush it today!",
+    "Be unstoppable!",
+    "Measure twice, cut once!",
+    "Today is your day!",
+    "Today is next level day!",
+    "Keep pushing!",
+    "Master the bend!",
+    "Full power today!",
+    "Believe in yourself!",
+    "Quality matters!",
+    "You are a pro!",
+    "Go get 'em!",
+    "No limits today!",
+    "Focus on the goal!",
+    "Let's wire it up!",
+    "Excellence is a habit!",
+    "You're excellent!",
+    "Be proud of your work!",
+    "One bend at a time!",
+    "Smooth bends only!",
+    "You make it look easy!",
+    "Your skills matter!",
+    "Small steps, big results!",
+    "Stay positive!",
+    "Turn plans into reality!",
+    "Craftsmanship wins!",
+    "Welcome back, Legend!"
+  ];
+  
+  // Get current motivational message index from localStorage and advance it
+  const [motivationIndex] = useState(() => {
+    const stored = localStorage.getItem('bendiq-motivation-index');
+    const currentIndex = stored ? parseInt(stored, 10) : 0;
+    const nextIndex = (currentIndex + 1) % motivationalMessages.length;
+    localStorage.setItem('bendiq-motivation-index', nextIndex.toString());
+    return currentIndex;
+  });
+  
+  // Auto-hide motivation after 3 seconds
+  useEffect(() => {
+    if (showMotivation && activeTab === 'bending') {
+      const timer = setTimeout(() => setShowMotivation(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showMotivation, activeTab]);
   const [renamingProject, setRenamingProject] = useState<number | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const streamRef = useRef(null);
@@ -1084,7 +1143,7 @@ export default function App() {
           visData = {h, a};
           resultNode = (
             <>
-              <Slider label="Height" value={h} onChange={setH} min={1} max={30} suffix='"' settings={settings}/>
+              <Slider label="Height" value={h} onChange={setH} min={1} max={30} suffix='"' settings={settings} theme={theme}/>
               <div className="flex justify-between items-end mb-1.5 px-1">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">Angle</label>
                 <div className="flex items-center gap-2">
@@ -1109,7 +1168,7 @@ export default function App() {
           visData = {h, a}; 
           resultNode = ( 
             <> 
-              <Slider label="Obstacle" value={h} onChange={setH} min={1} max={30} suffix='"' settings={settings}/> 
+              <Slider label="Obstacle" value={h} onChange={setH} min={1} max={30} suffix='"' settings={settings} theme={theme}/> 
               <div className="flex justify-between items-end mb-1.5 px-1">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">Angle</label> 
                 <div className="flex items-center gap-2"> 
@@ -1134,8 +1193,8 @@ export default function App() {
           visData = {h, w, a}; 
           resultNode = ( 
             <> 
-              <Slider label="Height" value={h} onChange={setH} min={1} max={30} suffix='"' settings={settings}/> 
-              <Slider label="Width" value={w} onChange={setW} min={1} max={48} suffix='"' settings={settings}/> 
+              <Slider label="Height" value={h} onChange={setH} min={1} max={30} suffix='"' settings={settings} theme={theme}/> 
+              <Slider label="Width" value={w} onChange={setW} min={1} max={48} suffix='"' settings={settings} theme={theme}/>
               <div className="flex justify-between items-end mb-1.5 px-1"> 
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">Angle</label> 
                 <div className="flex items-center gap-2"> 
@@ -1159,12 +1218,12 @@ export default function App() {
           const radRoll = toRad(a);
           const shrinkageRoll = trueO * (1/Math.sin(radRoll) - Math.cos(radRoll)/Math.sin(radRoll));
           visData = {r: offsetR, o: offsetO, a}; 
-          resultNode = (<><Slider label="Rise" value={offsetR} onChange={setOffsetR} min={1} max={48} suffix='"' settings={settings}/><Slider label="Roll" value={offsetO} onChange={setOffsetO} min={1} max={48} suffix='"' settings={settings}/><Slider label="Angle" value={a} onChange={setA} min={5} max={90} suffix="°" settings={settings}/><Result label="Travel" value={format(rollTravel)} unit='"' highlight theme={theme} settings={settings}/><Result label="Shrinkage" value={format(shrinkageRoll)} unit='"' theme={theme} settings={settings} isShrinkage={true}/></>);
+          resultNode = (<><Slider label="Rise" value={offsetR} onChange={setOffsetR} min={1} max={48} suffix='"' settings={settings} theme={theme}/><Slider label="Roll" value={offsetO} onChange={setOffsetO} min={1} max={48} suffix='"' settings={settings} theme={theme}/><Slider label="Angle" value={a} onChange={setA} min={5} max={90} suffix="°" settings={settings} theme={theme}/><Result label="Travel" value={format(rollTravel)} unit='"' highlight theme={theme} settings={settings}/><Result label="Shrinkage" value={format(shrinkageRoll)} unit='"' theme={theme} settings={settings} isShrinkage={true}/></>);
         } else if (bendType === 'parallel') { 
           const stagger = s * Math.tan(toRad(a/2)); 
           // Shrinkage for Concentric: S * tan(θ/2) - same as stagger formula
           visData = {s, a, numPipes}; 
-          resultNode = (<><Slider label="Space" value={s} onChange={setS} min={0.5} max={4} step={0.5} suffix='"' settings={settings}/><Slider label="Pipes" value={numPipes} onChange={setNumPipes} min={2} max={8} settings={settings}/><Slider label="Angle" value={a} onChange={setA} min={5} max={90} suffix="°" settings={settings}/><Result label="Shrinkage" value={format(stagger)} unit='"' theme={theme} settings={settings} isShrinkage={true}/></>);
+          resultNode = (<><Slider label="Space" value={s} onChange={setS} min={0.5} max={4} step={0.5} suffix='"' settings={settings} theme={theme}/><Slider label="Pipes" value={numPipes} onChange={setNumPipes} min={2} max={8} settings={settings} theme={theme}/><Slider label="Angle" value={a} onChange={setA} min={5} max={90} suffix="°" settings={settings} theme={theme}/><Result label="Shrinkage" value={format(stagger)} unit='"' theme={theme} settings={settings} isShrinkage={true}/></>);
         } else if (bendType === 'segmented') { 
           const sdev = (Math.PI * r * a) / 180; 
           // Shrinkage for Segment: Arc - Chord where Arc = (π * R * θ) / 180 and Chord = 2 * R * sin(θ/2)
@@ -1172,11 +1231,34 @@ export default function App() {
           const chordLength = 2 * r * Math.sin(toRad(a) / 2);
           const shrinkageSeg = arcLength - chordLength;
           visData = {r, a, n}; 
-          resultNode = (<><Slider label={`Shots (à ${format(a / n)}°)`} value={n} onChange={setN} min={2} max={40} settings={settings}/><Slider label="Radius" value={r} onChange={setR} min={10} max={120} suffix='"' settings={settings}/><Slider label="Angle" value={a} onChange={setA} min={1} max={180} suffix="°" settings={settings}/><Result label="Developed Length" value={format(sdev)} unit='"' highlight theme={theme} settings={settings}/><Result label="Shot Detail" value={`${n} shots à ${format(a / n)}°`} theme={theme} settings={settings}/><Result label="Shrinkage" value={format(shrinkageSeg)} unit='"' theme={theme} settings={settings} isShrinkage={true}/></>);
+          resultNode = (<><Slider label={`Shots (à ${format(a / n)}°)`} value={n} onChange={setN} min={2} max={40} settings={settings} theme={theme}/><Slider label="Radius" value={r} onChange={setR} min={10} max={120} suffix='"' settings={settings} theme={theme}/><Slider label="Angle" value={a} onChange={setA} min={1} max={180} suffix="°" settings={settings} theme={theme}/><Result label="Developed Length" value={format(sdev)} unit='"' highlight theme={theme} settings={settings}/><Result label="Shot Detail" value={`${n} shots à ${format(a / n)}°`} theme={theme} settings={settings}/><Result label="Shrinkage" value={format(shrinkageSeg)} unit='"' theme={theme} settings={settings} isShrinkage={true}/></>);
         } 
         const warnings = getBendWarnings(bendType); 
         return ( 
-          <div className="animate-in fade-in duration-500"> 
+          <div className="animate-in fade-in duration-500 relative"> 
+            {/* Motivational Overlay */}
+            {showMotivation && (
+              <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+                <div 
+                  className={`px-8 py-4 rounded-2xl backdrop-blur-md ${theme === 'light' ? 'bg-white/90' : 'bg-slate-900/90'} shadow-2xl border ${theme === 'light' ? 'border-slate-200' : 'border-white/10'} animate-fade-in`}
+                  style={{
+                    animation: 'fadeInOut 3s ease-in-out forwards'
+                  }}
+                >
+                  <p className={`text-xl font-black text-center ${theme === 'construction' ? 'text-yellow-500' : 'text-blue-500'}`}>
+                    {motivationalMessages[motivationIndex]}
+                  </p>
+                </div>
+              </div>
+            )}
+            <style>{`
+              @keyframes fadeInOut {
+                0% { opacity: 0; transform: scale(0.9); }
+                15% { opacity: 1; transform: scale(1); }
+                85% { opacity: 1; transform: scale(1); }
+                100% { opacity: 0; transform: scale(0.9); }
+              }
+            `}</style>
             <div className="flex items-center justify-between mb-4"> 
               <div className="flex items-center gap-3"> 
                 <h2 className={`text-[11px] font-black uppercase tracking-widest ${themeConfig.accent}`}>Bending Lab</h2> 
@@ -1187,7 +1269,7 @@ export default function App() {
                 <button onClick={() => { vibrate(18); saveProject(bendType.toUpperCase(), `H:${h}" A:${a}°`); }} className={`p-2.5 ${themeConfig.accentBg} text-white rounded-full active:scale-90 transition-transform shadow-lg`}><Save size={16}/></button>
               </div> 
             </div> 
-            <div className="relative mb-4"> 
+            <div className="relative mb-4">
               <div className="flex justify-center mb-2"> 
                 <div className={`flex ${themeConfig.tabBg} backdrop-blur-md p-1 rounded-full border border-white/20 overflow-x-auto max-w-full no-scrollbar shadow-xl`}> 
                   {[
@@ -1349,7 +1431,7 @@ export default function App() {
               </div>
               
               {/* Conduit Length for Nipple Detection */}
-              <Slider label="Conduit Length" value={conduitLength} onChange={setConduitLength} min={6} max={120} suffix='"' settings={settings}/>
+              <Slider label="Conduit Length" value={conduitLength} onChange={setConduitLength} min={6} max={120} suffix='"' settings={settings} theme={theme}/>
               
               <div className="space-y-3"> 
                 {wires.map((w,i)=>( 
@@ -1450,20 +1532,20 @@ export default function App() {
               <div className="border-t border-white/10 pt-4">
                 <span className={`text-[9px] font-black uppercase tracking-widest ${themeConfig.sub}`}>Conductors</span>
               </div>
-              <Slider label="#14 AWG (2.0 in³)" value={w14} onChange={setW14} min={0} max={12} settings={settings}/> 
-              <Slider label="#12 AWG (2.25 in³)" value={w12} onChange={setW12} min={0} max={12} settings={settings}/> 
-              <Slider label="#10 AWG (2.5 in³)" value={w10} onChange={setW10} min={0} max={12} settings={settings}/> 
+              <Slider label="#14 AWG (2.0 in³)" value={w14} onChange={setW14} min={0} max={12} settings={settings} theme={theme}/> 
+              <Slider label="#12 AWG (2.25 in³)" value={w12} onChange={setW12} min={0} max={12} settings={settings} theme={theme}/> 
+              <Slider label="#10 AWG (2.5 in³)" value={w10} onChange={setW10} min={0} max={12} settings={settings} theme={theme}/> 
               
               <div className="border-t border-white/10 pt-4">
                 <span className={`text-[9px] font-black uppercase tracking-widest ${themeConfig.sub}`}>Devices & Equipment</span>
               </div>
-              <Slider label="Devices / Yokes" value={dev} onChange={setDev} min={0} max={4} settings={settings}/> 
-              <Slider label="Support Fittings (Hickeys)" value={supportFittings} onChange={setSupportFittings} min={0} max={2} settings={settings}/>
+              <Slider label="Devices / Yokes" value={dev} onChange={setDev} min={0} max={4} settings={settings} theme={theme}/> 
+              <Slider label="Support Fittings (Hickeys)" value={supportFittings} onChange={setSupportFittings} min={0} max={2} settings={settings} theme={theme}/>
               
               <div className="border-t border-white/10 pt-4">
                 <span className={`text-[9px] font-black uppercase tracking-widest ${themeConfig.sub}`}>Grounding & Clamps</span>
               </div>
-              <Slider label="Ground Conductors" value={groundCount} onChange={setGroundCount} min={0} max={8} settings={settings}/>
+              <Slider label="Ground Conductors" value={groundCount} onChange={setGroundCount} min={0} max={8} settings={settings} theme={theme}/>
               <div className="flex gap-2 items-center">
                 <Select value={largestGroundSize} onValueChange={setLargestGroundSize}>
                   <SelectTrigger className={`flex-1 h-10 rounded-xl border-0 ${themeConfig.inset} ${themeConfig.text} text-xs font-bold`}>
@@ -1500,6 +1582,23 @@ export default function App() {
             </div>
           </div> 
         );
+      case 'benderIQ':
+        if (benderIQSubView === 'dictionary') {
+          return <DictionaryView onBack={() => setBenderIQSubView(null)} theme={theme} themeConfig={themeConfig} />;
+        }
+        if (benderIQSubView === 'proTips') {
+          return <ProTipsView onBack={() => setBenderIQSubView(null)} theme={theme} themeConfig={themeConfig} />;
+        }
+        if (benderIQSubView === 'quickTips') {
+          return <QuickTipsView onBack={() => setBenderIQSubView(null)} theme={theme} themeConfig={themeConfig} />;
+        }
+        return (
+          <BenderIQView 
+            theme={theme} 
+            themeConfig={themeConfig}
+            onNavigate={(view) => setBenderIQSubView(view)}
+          />
+        );
       case 'projects': 
         const handleRename = (id: number, newName: string) => {
           setProjs(projs.map(p => p.id === id ? { ...p, t: newName } : p));
@@ -1508,7 +1607,7 @@ export default function App() {
           setToast({ s: true, m: "Project Renamed" });
           setTimeout(() => setToast({ s: false, m: "" }), 2000);
         };
-        return ( 
+        return (
           <div className="animate-in fade-in duration-500"> 
             <h2 className={`text-xl font-black ${themeConfig.text} uppercase tracking-tighter mb-6`}>PROJECTS</h2> 
             {projs.length === 0 ? <div className="text-center py-20 text-slate-600 font-black uppercase tracking-widest text-[10px] opacity-40">Empty Archive</div> : ( 
@@ -1676,16 +1775,16 @@ export default function App() {
           {id:'bending',icon:Move,l:'Bends'},
           {id:'cFill',icon:null,l:'Conduit Fill', customIcon: (active: boolean) => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 3 : 2}><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/></svg>},
           {id:'bFill',icon:Package,l:'Box Fill'},
-          {id:'benderIQ',icon:Brain,l:'BENDER IQ', specialLabel: true},
+          {id:'benderIQ',icon:Lightbulb,l:"BENDER'S IQ", specialLabel: true},
           {id:'projects',icon:FolderInput,l:'PROJECTS'}
         ].map(tab => ( 
           <button key={tab.id} onClick={() => { vibrate(12); setActiveTab(tab.id); setBenderIQSubView(null); }} className={`flex flex-col items-center gap-1.5 transition-all relative ${activeTab === tab.id ? themeConfig.accent : (theme === 'light' ? 'text-slate-400' : 'text-slate-500')}`}> 
             {activeTab === tab.id && <div className={`absolute -top-3 w-8 h-1 ${themeConfig.accentBg} rounded-full`}></div>} 
-            {tab.customIcon ? tab.customIcon(activeTab === tab.id) : tab.icon && <tab.icon size={20} strokeWidth={activeTab === tab.id ? 3 : 2} />} 
+            {tab.customIcon ? tab.customIcon(activeTab === tab.id) : tab.icon && <tab.icon size={20} strokeWidth={activeTab === tab.id ? 3 : 2} className={tab.specialLabel && activeTab === tab.id ? 'text-blue-500' : ''} />} 
             {tab.specialLabel ? (
               <span className="text-[9px] font-black uppercase tracking-widest text-center leading-tight">
-                <span className={activeTab === tab.id ? 'text-blue-500' : ''}>{tab.l.replace(' IQ', '')}</span>
-                <span className={activeTab === tab.id ? 'text-white' : 'text-blue-500'}> IQ</span>
+                <span className={activeTab === tab.id ? (theme === 'construction' ? 'text-yellow-500' : 'text-blue-500') : ''}>{tab.l.replace("'S IQ", "'S")}</span>
+                <span className={activeTab === tab.id ? (theme === 'light' ? 'text-black' : 'text-white') : (theme === 'light' ? 'text-black' : 'text-blue-500')}> IQ</span>
               </span>
             ) : (
               <span className="text-[9px] font-black uppercase tracking-widest text-center leading-tight">{tab.l}</span>
