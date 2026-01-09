@@ -1811,6 +1811,8 @@ export default function App() {
               <p>c/o Block Services</p>
               <p>Stuttgarter Str. 106</p>
               <p>70736 Fellbach</p>
+              <p className="mt-2">Tel.: 015679758515</p>
+              <p>Email: nivotools@gmail.com</p>
             </div>
           </DialogContent>
         </Dialog>
