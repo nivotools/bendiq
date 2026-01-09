@@ -5,8 +5,12 @@ import {
   AlertCircle, ShieldCheck, Move, CornerDownRight, Save,
   FolderInput, Trash2, Package, Download, X, Zap, Pencil,
   FileText, Loader2, Sun, Moon, HardHat, Plus, RotateCcw,
-  Scale, CheckCircle2, Wand2, AlertTriangle, Settings, Mic, Type, MousePointerClick, Flashlight, Share2
+  Scale, CheckCircle2, Wand2, AlertTriangle, Settings, Mic, Type, MousePointerClick, Flashlight, Share2, Brain
 } from 'lucide-react';
+import BenderIQView from '@/components/BenderIQ/BenderIQView';
+import DictionaryView from '@/components/BenderIQ/DictionaryView';
+import ProTipsView from '@/components/BenderIQ/ProTipsView';
+import QuickTipsView from '@/components/BenderIQ/QuickTipsView';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -1672,14 +1676,22 @@ export default function App() {
           {id:'bending',icon:Move,l:'Bends'},
           {id:'cFill',icon:null,l:'Conduit Fill', customIcon: (active: boolean) => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 3 : 2}><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/></svg>},
           {id:'bFill',icon:Package,l:'Box Fill'},
+          {id:'benderIQ',icon:Brain,l:'BENDER IQ', specialLabel: true},
           {id:'projects',icon:FolderInput,l:'PROJECTS'}
         ].map(tab => ( 
-          <button key={tab.id} onClick={() => { vibrate(12); setActiveTab(tab.id); }} className={`flex flex-col items-center gap-1.5 transition-all relative ${activeTab === tab.id ? themeConfig.accent : (theme === 'light' ? 'text-slate-400' : 'text-slate-500')}`}> 
+          <button key={tab.id} onClick={() => { vibrate(12); setActiveTab(tab.id); setBenderIQSubView(null); }} className={`flex flex-col items-center gap-1.5 transition-all relative ${activeTab === tab.id ? themeConfig.accent : (theme === 'light' ? 'text-slate-400' : 'text-slate-500')}`}> 
             {activeTab === tab.id && <div className={`absolute -top-3 w-8 h-1 ${themeConfig.accentBg} rounded-full`}></div>} 
             {tab.customIcon ? tab.customIcon(activeTab === tab.id) : tab.icon && <tab.icon size={20} strokeWidth={activeTab === tab.id ? 3 : 2} />} 
-            <span className="text-[9px] font-black uppercase tracking-widest text-center leading-tight">{tab.l}</span> 
+            {tab.specialLabel ? (
+              <span className="text-[9px] font-black uppercase tracking-widest text-center leading-tight">
+                <span className={activeTab === tab.id ? 'text-blue-500' : ''}>{tab.l.replace(' IQ', '')}</span>
+                <span className={activeTab === tab.id ? 'text-white' : 'text-blue-500'}> IQ</span>
+              </span>
+            ) : (
+              <span className="text-[9px] font-black uppercase tracking-widest text-center leading-tight">{tab.l}</span>
+            )}
           </button> 
-        ))} 
+        ))}
       </div>
       <div className={`fixed bottom-28 left-1/2 -translate-x-1/2 ${themeConfig.card} border px-6 py-3 rounded-full shadow-2xl transition-all duration-500 z-50 backdrop-blur-md flex items-center gap-3 ${toast.s ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}><ShieldCheck size={16} className={themeConfig.accent}/><span className={`text-[10px] font-black uppercase tracking-widest ${theme === 'light' ? 'text-black' : 'text-white'}`}>{toast.m}</span></div> 
     </div> 
