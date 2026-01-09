@@ -60,7 +60,7 @@ export const dictionaryData: DictionaryEntry[] = [
   // Installation Terms
   { id: "41", term: "Concentric Bends", definition: "Multiple parallel pipes bent at the same location, each with progressively larger marks to maintain consistent spacing.", category: "Installation" },
   { id: "42", term: "Rack", definition: "Multiple conduits running parallel, typically mounted on a common support structure.", category: "Installation" },
-  { id: "43", term: "Pull Point", definition: "A junction box or access point for pulling wire. Required every 360° of cumulative bends.", category: "Installation" },
+  { id: "43", term: "Pull Point", definition: "A junction box or access point for pulling wire. Standard practice recommends one every 360° of cumulative bends.", category: "Installation" },
   { id: "44", term: "Stagger", definition: "The offset added to each successive pipe's mark in parallel offset bends to keep pipes parallel.", category: "Installation" },
   { id: "45", term: "Coupling", definition: "A fitting that joins two pieces of conduit end-to-end.", category: "Installation" },
   { id: "46", term: "Nipple", definition: "A short piece of conduit, typically 24\" or less, connecting two close boxes or fittings.", category: "Installation" },
