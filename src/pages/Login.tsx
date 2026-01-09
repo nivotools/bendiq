@@ -1,44 +1,40 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
-import { z } from 'zod';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import React, { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { z } from "zod";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import bendiqLogo from "@/assets/bendiq-logo.png";
 
-const emailSchema = z.string().email('Please enter a valid email address');
-const passwordSchema = z.string()
-  .min(8, 'Password must be at least 8 characters')
-  .regex(/[A-Z]/, 'Include at least one uppercase letter')
-  .regex(/[a-z]/, 'Include at least one lowercase letter')
-  .regex(/[0-9]/, 'Include at least one number');
+const emailSchema = z.string().email("Please enter a valid email address");
+const passwordSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .regex(/[A-Z]/, "Include at least one uppercase letter")
+  .regex(/[a-z]/, "Include at least one lowercase letter")
+  .regex(/[0-9]/, "Include at least one number");
 
 const Login = () => {
   const [isSignUp, setIsSignUp] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [error, setError] = useState('');
-  const [emailError, setEmailError] = useState('');
-  const [passwordError, setPasswordError] = useState('');
+  const [error, setError] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [resetEmail, setResetEmail] = useState('');
+  const [resetEmail, setResetEmail] = useState("");
   const [resetSent, setResetSent] = useState(false);
   const [showImprint, setShowImprint] = useState(false);
   const [formVisible, setFormVisible] = useState(false);
-  
+
   const { signIn, signUp, signInWithGoogle, resetPassword } = useAuth();
   const navigate = useNavigate();
 
@@ -51,7 +47,7 @@ const Login = () => {
   const validateEmail = (value: string) => {
     try {
       emailSchema.parse(value);
-      setEmailError('');
+      setEmailError("");
       return true;
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -64,7 +60,7 @@ const Login = () => {
   const validatePassword = (value: string) => {
     try {
       passwordSchema.parse(value);
-      setPasswordError('');
+      setPasswordError("");
       return true;
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -76,9 +72,9 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setEmailError('');
-    setPasswordError('');
+    setError("");
+    setEmailError("");
+    setPasswordError("");
 
     const isEmailValid = validateEmail(email);
     const isPasswordValid = validatePassword(password);
@@ -94,20 +90,22 @@ const Login = () => {
       } else {
         await signIn(email, password);
       }
-      navigate('/');
+      navigate("/");
     } catch (err: any) {
       // Use generic error messages to prevent user enumeration attacks
-      if (err.code === 'auth/user-not-found' || 
-          err.code === 'auth/wrong-password' || 
-          err.code === 'auth/invalid-credential') {
-        setError('Invalid email or password. Please try again.');
-      } else if (err.code === 'auth/email-already-in-use') {
+      if (
+        err.code === "auth/user-not-found" ||
+        err.code === "auth/wrong-password" ||
+        err.code === "auth/invalid-credential"
+      ) {
+        setError("Invalid email or password. Please try again.");
+      } else if (err.code === "auth/email-already-in-use") {
         // For signup, use generic message to prevent email enumeration
-        setError('Unable to create account. Please try a different email or sign in.');
-      } else if (err.code === 'auth/too-many-requests') {
-        setError('Too many attempts. Please try again later.');
+        setError("Unable to create account. Please try a different email or sign in.");
+      } else if (err.code === "auth/too-many-requests") {
+        setError("Too many attempts. Please try again later.");
       } else {
-        setError('An error occurred. Please try again.');
+        setError("An error occurred. Please try again.");
       }
     } finally {
       setLoading(false);
@@ -115,18 +113,20 @@ const Login = () => {
   };
 
   const handleGoogleSignIn = async () => {
-    setError('');
+    setError("");
     setLoading(true);
     try {
       await signInWithGoogle();
-      navigate('/');
+      navigate("/");
     } catch (err: any) {
-      if (err.code === 'auth/popup-closed-by-user') {
-        setError('Sign in was cancelled');
-      } else if (err.code === 'auth/unauthorized-domain') {
-        setError('This domain is not authorized. Please add this domain to your Firebase Console under Authentication > Settings > Authorized domains.');
+      if (err.code === "auth/popup-closed-by-user") {
+        setError("Sign in was cancelled");
+      } else if (err.code === "auth/unauthorized-domain") {
+        setError(
+          "This domain is not authorized. Please add this domain to your Firebase Console under Authentication > Settings > Authorized domains.",
+        );
       } else {
-        setError(err.message || 'Failed to sign in with Google');
+        setError(err.message || "Failed to sign in with Google");
       }
     } finally {
       setLoading(false);
@@ -135,8 +135,8 @@ const Login = () => {
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    
+    setError("");
+
     try {
       emailSchema.parse(resetEmail);
     } catch (err) {
@@ -151,36 +151,52 @@ const Login = () => {
       await resetPassword(resetEmail);
       setResetSent(true);
     } catch (err: any) {
-      setError(err.message || 'Failed to send reset email');
+      setError(err.message || "Failed to send reset email");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 font-sans" style={{ backgroundColor: '#0B111E' }}>
-      <div className={`w-full max-w-sm transition-all duration-500 ease-out ${formVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+    <div
+      className="min-h-screen flex flex-col items-center justify-center p-6 font-sans"
+      style={{ backgroundColor: "#0B111E" }}
+    >
+      <div
+        className={`w-full max-w-sm transition-all duration-500 ease-out ${formVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+      >
         {/* Logo and Welcome */}
         <div className="text-center mb-8">
-          <img 
-            src={bendiqLogo} 
-            alt="BendIQ Logo" 
-            className="w-24 h-24 mx-auto mb-4 object-contain"
-          />
-          <p className="text-sm font-sans" style={{ color: '#64748B', letterSpacing: '0.1em' }}>Welcome to</p>
+          <img src={bendiqLogo} alt="BendIQ Logo" className="w-24 h-24 mx-auto mb-4 object-contain" />
+          <p className="text-sm font-sans" style={{ color: "#64748B", letterSpacing: "0.1em" }}>
+            Welcome to
+          </p>
           <h1 className="text-3xl font-bold text-white font-sans tracking-wide">
-            BEND<span style={{ color: '#3C83F6' }}>IQ</span>
+            BEND<span style={{ color: "#3C83F6" }}>IQ</span>
           </h1>
-          <p className="text-slate-500 mt-2 uppercase" style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", fontSize: '12px', fontWeight: 500, letterSpacing: '0.15em' }}>
+          <p
+            className="text-slate-500 mt-2 uppercase"
+            style={{
+              fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+              fontSize: "12px",
+              fontWeight: 500,
+              letterSpacing: "0.15em",
+            }}
+          >
             PROFESSIONAL CONDUIT BENDING
           </p>
         </div>
 
         {/* Auth Form */}
-        <div className={`backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl transition-all duration-700 delay-200 ${formVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`} style={{ backgroundColor: '#0B111E' }}>
+        <div
+          className={`backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl transition-all duration-700 delay-200 ${formVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+          style={{ backgroundColor: "#0B111E" }}
+        >
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-slate-300 text-sm font-sans">Email</Label>
+              <Label htmlFor="email" className="text-slate-300 text-sm font-sans">
+                Email
+              </Label>
               <Input
                 id="email"
                 type="email"
@@ -191,19 +207,19 @@ const Login = () => {
                 }}
                 onBlur={() => email && validateEmail(email)}
                 placeholder="Enter your email"
-                className={`bg-slate-900/50 border-white/10 text-white placeholder:text-slate-500 font-sans rounded-xl ${emailError ? 'border-red-500' : ''}`}
+                className={`bg-slate-900/50 border-white/10 text-white placeholder:text-slate-500 font-sans rounded-xl ${emailError ? "border-red-500" : ""}`}
               />
-              {emailError && (
-                <p className="text-red-400 text-xs font-sans animate-fade-in">{emailError}</p>
-              )}
+              {emailError && <p className="text-red-400 text-xs font-sans animate-fade-in">{emailError}</p>}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-slate-300 text-sm font-sans">Password</Label>
+              <Label htmlFor="password" className="text-slate-300 text-sm font-sans">
+                Password
+              </Label>
               <div className="relative">
                 <Input
                   id="password"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
@@ -211,7 +227,7 @@ const Login = () => {
                   }}
                   onBlur={() => password && validatePassword(password)}
                   placeholder="Enter your password"
-                  className={`bg-slate-900/50 border-white/10 text-white placeholder:text-slate-500 pr-10 font-sans rounded-xl ${passwordError ? 'border-red-500' : ''}`}
+                  className={`bg-slate-900/50 border-white/10 text-white placeholder:text-slate-500 pr-10 font-sans rounded-xl ${passwordError ? "border-red-500" : ""}`}
                 />
                 <button
                   type="button"
@@ -221,16 +237,14 @@ const Login = () => {
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
-              {passwordError && (
-                <p className="text-red-400 text-xs font-sans animate-fade-in">{passwordError}</p>
-              )}
+              {passwordError && <p className="text-red-400 text-xs font-sans animate-fade-in">{passwordError}</p>}
             </div>
 
             {!isSignUp && (
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="remember" 
+                  <Checkbox
+                    id="remember"
                     checked={rememberMe}
                     onCheckedChange={(checked) => setRememberMe(checked as boolean)}
                     className="border-white/20 data-[state=checked]:bg-blue-600 rounded-full"
@@ -249,19 +263,15 @@ const Login = () => {
               </div>
             )}
 
-            {error && (
-              <p className="text-red-400 text-xs text-center font-sans">{error}</p>
-            )}
+            {error && <p className="text-red-400 text-xs text-center font-sans">{error}</p>}
 
             <Button
               type="submit"
               disabled={loading}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl font-sans"
             >
-              {loading ? (
-                <Loader2 className="animate-spin mr-2" size={18} />
-              ) : null}
-              {isSignUp ? 'Sign Up' : 'Sign In'}
+              {loading ? <Loader2 className="animate-spin mr-2" size={18} /> : null}
+              {isSignUp ? "Sign Up" : "Sign In"}
             </Button>
           </form>
 
@@ -280,38 +290,50 @@ const Login = () => {
             className="w-full bg-white hover:bg-gray-100 text-gray-800 font-bold py-3 rounded-xl border-0 font-sans"
           >
             <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+              <path
+                fill="#4285F4"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+              />
+              <path
+                fill="#34A853"
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+              />
+              <path
+                fill="#EA4335"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+              />
             </svg>
-            {isSignUp ? 'Sign up with Google' : 'Sign in with Google'}
+            {isSignUp ? "Sign up with Google" : "Sign in with Google"}
           </Button>
 
           <p className="text-center text-slate-400 text-sm mt-6 font-sans">
-            {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
+            {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
             <button
               type="button"
               onClick={() => {
                 setIsSignUp(!isSignUp);
-                setError('');
+                setError("");
               }}
               className="text-blue-400 hover:text-blue-300 font-bold transition-colors"
             >
-              {isSignUp ? 'Sign In' : 'Sign Up'}
+              {isSignUp ? "Sign In" : "Sign Up"}
             </button>
           </p>
         </div>
 
         {/* Footer Links */}
         <div className="flex justify-center gap-6 mt-6">
-          <button 
+          <button
             onClick={() => setShowImprint(true)}
             className="text-slate-500 text-xs hover:text-slate-300 transition-colors font-sans"
           >
             Imprint
           </button>
-          <Link 
+          <Link
             to="/privacy-policy"
             className="text-slate-500 text-xs hover:text-slate-300 transition-colors font-sans"
           >
@@ -328,14 +350,12 @@ const Login = () => {
           </DialogHeader>
           {resetSent ? (
             <div className="text-center py-4">
-              <p className="text-slate-300 font-sans">
-                Password reset email sent! Check your inbox.
-              </p>
+              <p className="text-slate-300 font-sans">Password reset email sent! Check your inbox.</p>
               <Button
                 onClick={() => {
                   setShowForgotPassword(false);
                   setResetSent(false);
-                  setResetEmail('');
+                  setResetEmail("");
                 }}
                 className="mt-4 bg-blue-600 hover:bg-blue-700 font-sans"
               >
@@ -345,7 +365,9 @@ const Login = () => {
           ) : (
             <form onSubmit={handleForgotPassword} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="reset-email" className="text-slate-300 font-sans">Email</Label>
+                <Label htmlFor="reset-email" className="text-slate-300 font-sans">
+                  Email
+                </Label>
                 <Input
                   id="reset-email"
                   type="email"
@@ -356,11 +378,7 @@ const Login = () => {
                 />
               </div>
               {error && <p className="text-red-400 text-xs font-sans">{error}</p>}
-              <Button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-700 font-sans"
-              >
+              <Button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 font-sans">
                 {loading ? <Loader2 className="animate-spin mr-2" size={18} /> : null}
                 Send Reset Link
               </Button>
@@ -381,11 +399,10 @@ const Login = () => {
             <p>Stuttgarter Str. 106</p>
             <p>70736 Fellbach</p>
             <p className="mt-2">Tel.: 015679758515</p>
-            <p>Email: nivotools@gmail.com</p>
+            <p>Email: nivotools@bend-iq.com</p>
           </div>
         </DialogContent>
       </Dialog>
-
     </div>
   );
 };
