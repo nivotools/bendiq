@@ -17,7 +17,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import bendiqLogo from "@/assets/bendiq-logo.png";
 
 const emailSchema = z.string().email('Please enter a valid email address');
-const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
+const passwordSchema = z.string()
+  .min(8, 'Password must be at least 8 characters')
+  .regex(/[A-Z]/, 'Include at least one uppercase letter')
+  .regex(/[a-z]/, 'Include at least one lowercase letter')
+  .regex(/[0-9]/, 'Include at least one number');
 
 const Login = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -93,16 +97,18 @@ const Login = () => {
       }
       navigate('/');
     } catch (err: any) {
-      if (err.code === 'auth/user-not-found') {
-        setError('No account found with this email');
-      } else if (err.code === 'auth/wrong-password') {
-        setError('Incorrect password');
+      // Use generic error messages to prevent user enumeration attacks
+      if (err.code === 'auth/user-not-found' || 
+          err.code === 'auth/wrong-password' || 
+          err.code === 'auth/invalid-credential') {
+        setError('Invalid email or password. Please try again.');
       } else if (err.code === 'auth/email-already-in-use') {
-        setError('An account with this email already exists');
-      } else if (err.code === 'auth/invalid-credential') {
-        setError('Invalid email or password');
+        // For signup, use generic message to prevent email enumeration
+        setError('Unable to create account. Please try a different email or sign in.');
+      } else if (err.code === 'auth/too-many-requests') {
+        setError('Too many attempts. Please try again later.');
       } else {
-        setError(err.message || 'An error occurred');
+        setError('An error occurred. Please try again.');
       }
     } finally {
       setLoading(false);
