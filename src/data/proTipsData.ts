@@ -108,7 +108,7 @@ export const proTipsData: ProTip[] = [
   },
   {
     id: "16",
-    question: "What's the nipple exception and when can I use it?",
+    question: "What's the short section exception and when can I use it?",
     answer: "If a conduit section is 24 inches or less (called a 'nipple'), you can fill it to 60% instead of the normal 40%. This applies to: Panel-to-panel connections, short jumps between adjacent boxes, and equipment connections. The logic: Over short distances, pulling difficulty and heat dissipation are less critical. Important: Both ends must connect to boxes/enclosures - it can't be part of a longer run. This exception often allows going down one conduit size.",
     category: "Conduit Fill"
   },

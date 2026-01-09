@@ -1477,11 +1477,11 @@ export default function App() {
             </div> 
             <div id="fill-visualizer"><Visualizer type="conduitFill" data={{ fill: fillPct, limit: allowedFillPct }} theme={theme}/></div> 
             
-            {/* NEC Info Panel */}
+            {/* Fill Standards Info Panel */}
             <div className={`${themeConfig.card} p-4 rounded-2xl mb-4 shadow-md`}>
               <div className="flex items-center gap-2 mb-2">
                 <ShieldCheck size={14} className={themeConfig.accent} />
-                <span className={`text-[10px] font-black uppercase tracking-widest ${themeConfig.sub}`}>NEC Chapter 9 Table 1</span>
+                <span className={`text-[10px] font-black uppercase tracking-widest ${themeConfig.sub}`}>Standard Fill Tables</span>
               </div>
               <div className="grid grid-cols-2 gap-2 text-[10px]">
                 <div className={`p-2 rounded-lg ${themeConfig.inset} flex justify-between`}>
@@ -1496,7 +1496,7 @@ export default function App() {
               {isNipple && (
                 <div className="mt-2 p-2 rounded-lg bg-green-500/10 border border-green-500/30 flex items-center gap-2">
                   <CheckCircle2 size={12} className="text-green-500" />
-                  <span className="text-[9px] text-green-400 font-bold">Nipple Exception (≤24") - 60% Fill Allowed</span>
+                  <span className="text-[9px] text-green-400 font-bold">Short Section Exception (≤24") - 60% Fill Allowed</span>
                 </div>
               )}
             </div>
@@ -1573,7 +1573,7 @@ export default function App() {
           </div> 
         );
       case 'bFill': 
-        // NEC 314.16(B) calculations
+        // Box fill calculations
         const largestWireInBox = w10 > 0 ? '10' : (w12 > 0 ? '12' : '14');
         const largestGroundVol = WIRE_VOLUME[largestGroundSize] || 2.0;
         
@@ -1589,7 +1589,7 @@ export default function App() {
         const clampVol = hasClamps ? WIRE_VOLUME[largestWireInBox] : 0;
         
         // Grounds = 1x largest ground (all grounds count as one)
-        // NEC 2020/2023: if >4 grounds, add 1/4 volume for each additional
+        // Standard rule: if >4 grounds, add 1/4 volume for each additional
         let groundVol = largestGroundVol;
         if (groundCount > 4) {
           groundVol += (groundCount - 4) * (largestGroundVol * 0.25);
@@ -1616,11 +1616,11 @@ export default function App() {
             </div> 
             <div id="box-visualizer"><Visualizer type="boxFill" data={{ used: boxUsed, cap: boxCapValue }} theme={theme}/></div> 
             
-            {/* NEC Info Panel */}
+            {/* Box Fill Standards Info Panel */}
             <div className={`${themeConfig.card} p-4 rounded-2xl mb-4 shadow-md`}>
               <div className="flex items-center gap-2 mb-2">
                 <ShieldCheck size={14} className={themeConfig.accent} />
-                <span className={`text-[10px] font-black uppercase tracking-widest ${themeConfig.sub}`}>NEC Article 314.16</span>
+                <span className={`text-[10px] font-black uppercase tracking-widest ${themeConfig.sub}`}>Standard Box Fill Rules</span>
               </div>
               <div className="grid grid-cols-2 gap-2 text-[9px]">
                 <div className={`p-2 rounded-2xl ${themeConfig.inset}`}>
