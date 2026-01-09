@@ -1238,7 +1238,7 @@ export default function App() {
           <div className="animate-in fade-in duration-500 relative"> 
             {/* Motivational Overlay */}
             {showMotivation && (
-              <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+              <div className="absolute inset-0 z-20 flex items-start justify-center pt-[15%] pointer-events-none">
                 <div 
                   className={`px-8 py-4 rounded-2xl backdrop-blur-md ${theme === 'light' ? 'bg-white/90' : 'bg-slate-900/90'} shadow-2xl border ${theme === 'light' ? 'border-slate-200' : 'border-white/10'} animate-fade-in`}
                   style={{
@@ -1651,7 +1651,7 @@ export default function App() {
   return ( 
     <div style={appStyle} className={`min-h-screen ${themeConfig.bg} ${themeConfig.text} overflow-x-hidden p-5 pb-32 flex flex-col items-center transition-colors duration-300`}> 
       <div className="w-full max-w-md mb-8 mt-2 flex items-center justify-between"> 
-        <div className="flex items-center gap-3"><img src={bendiqLogo} alt="BendIQ Logo" className="w-12 h-12 object-contain" /><div><h1 className="text-2xl font-black font-sans">BEND<span style={{ color: '#3C83F6' }}>IQ</span></h1><div className="flex items-center gap-1.5"><div className={`w-1.5 h-1.5 rounded-full ${themeConfig.accentBg} animate-pulse`}></div><p className={`${themeConfig.sub} text-[9px] font-black uppercase tracking-[0.4em]`}>Beta Version 0.1</p></div></div></div> 
+        <div className="flex items-center gap-3"><img src={bendiqLogo} alt="BendIQ Logo" className="w-16 h-16 object-contain" /><div><h1 className="text-2xl font-black font-sans">BEND<span style={{ color: '#3C83F6' }}>IQ</span></h1><div className="flex items-center gap-1.5"><div className={`w-1.5 h-1.5 rounded-full ${themeConfig.accentBg} animate-pulse`}></div><p className={`${themeConfig.sub} text-[9px] font-black uppercase tracking-[0.4em]`}>Beta Version 0.1</p></div></div></div> 
         <div className="flex items-center gap-2"> 
           <button onClick={() => { vibrate(18); toggleFlashlight(); }} className={`w-9 h-9 ${themeConfig.card} border rounded-xl flex items-center justify-center shadow-lg active:scale-90 transition-transform ${flashlightOn ? 'bg-yellow-400 border-yellow-500 text-white' : ''}`}> 
             <Flashlight size={18} className={flashlightOn ? 'text-white' : themeConfig.text} fill={flashlightOn ? "currentColor" : "none"} /> 
@@ -1780,7 +1780,7 @@ export default function App() {
         ].map(tab => ( 
           <button key={tab.id} onClick={() => { vibrate(12); setActiveTab(tab.id); setBenderIQSubView(null); }} className={`flex flex-col items-center gap-1.5 transition-all relative ${activeTab === tab.id ? themeConfig.accent : (theme === 'light' ? 'text-slate-400' : 'text-slate-500')}`}> 
             {activeTab === tab.id && <div className={`absolute -top-3 w-8 h-1 ${themeConfig.accentBg} rounded-full`}></div>} 
-            {tab.customIcon ? tab.customIcon(activeTab === tab.id) : tab.icon && <tab.icon size={20} strokeWidth={activeTab === tab.id ? 3 : 2} className={tab.specialLabel && activeTab === tab.id ? 'text-blue-500' : ''} />} 
+            {tab.customIcon ? tab.customIcon(activeTab === tab.id) : tab.icon && <tab.icon size={20} strokeWidth={activeTab === tab.id ? 3 : 2} className={tab.specialLabel && activeTab === tab.id ? 'text-yellow-500' : ''} />} 
             {tab.specialLabel ? (
               <span className="text-[9px] font-black uppercase tracking-widest text-center leading-tight">
                 <span className={activeTab === tab.id ? (theme === 'construction' ? 'text-yellow-500' : 'text-blue-500') : ''}>{tab.l.replace("'S IQ", "'S")}</span>
