@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Shield, Settings, Cookie } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCookieConsent } from '@/contexts/CookieConsentContext';
@@ -64,12 +65,12 @@ const ConsentBanner: React.FC = () => {
             Cookie Policy
           </button>
           <span className="text-slate-600">|</span>
-          <a 
-            href="#privacy" 
+          <Link 
+            to="/privacy-policy" 
             className="text-xs text-slate-400 hover:text-blue-400 transition-colors"
           >
             Privacy Policy
-          </a>
+          </Link>
         </div>
       </div>
     </div>

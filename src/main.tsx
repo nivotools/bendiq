@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { CookieConsentProvider } from "./contexts/CookieConsentContext";
 import App from "./App.tsx";
 import Login from "./pages/Login.tsx";
+import PrivacyPolicy from "./pages/PrivacyPolicy.tsx";
 import "./index.css";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -46,6 +47,7 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/" element={<ProtectedRoute><App /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
