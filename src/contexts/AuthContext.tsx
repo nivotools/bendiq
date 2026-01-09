@@ -81,33 +81,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user) throw new Error('No user logged in');
     
     const userId = user.uid;
-    const batch = writeBatch(db);
     
-    // Collections to clear - add all your user data collections here
-    const collectionsToDelete = ['projects', 'userSettings', 'userData'];
-    
-    for (const collectionName of collectionsToDelete) {
-      // Query for documents owned by this user
-      const q = query(collection(db, collectionName), where('userId', '==', userId));
-      const querySnapshot = await getDocs(q);
-      
-      querySnapshot.forEach((docSnapshot) => {
-        batch.delete(docSnapshot.ref);
-      });
-      
-      // Also try to delete document with userId as the document ID
-      const directDocRef = doc(db, collectionName, userId);
+    // Handle collections where document ID IS the userId
+    const directDocCollections = ['userData', 'userSettings'];
+    for (const collectionName of directDocCollections) {
       try {
-        batch.delete(directDocRef);
-      } catch {
-        // Document may not exist, that's fine
+        const docRef = doc(db, collectionName, userId);
+        await deleteDoc(docRef);
+      } catch (error: any) {
+        // Ignore "not-found" errors - document may not exist
+        if (error.code !== 'not-found') {
+          console.warn(`Could not delete ${collectionName}/${userId}:`, error);
+        }
       }
     }
     
-    await batch.commit();
+    // Handle collections where userId is a field in the document
+    const queryCollections = ['projects'];
+    for (const collectionName of queryCollections) {
+      const q = query(collection(db, collectionName), where('userId', '==', userId));
+      const querySnapshot = await getDocs(q);
+      
+      // Use batch for multiple deletes
+      if (!querySnapshot.empty) {
+        const batch = writeBatch(db);
+        querySnapshot.forEach((docSnapshot) => {
+          batch.delete(docSnapshot.ref);
+        });
+        await batch.commit();
+      }
+    }
     
     // Clear local storage for this user
-    const keysToRemove = [];
+    const keysToRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key && (key.includes('benderIQ') || key.includes('bendiq') || key.includes('projs'))) {

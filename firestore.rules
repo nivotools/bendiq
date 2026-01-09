@@ -2,28 +2,25 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // User data collection - each user can only access their own data
+    
+    // User data collection - document ID IS the userId
     match /userData/{userId} {
       allow read, write, delete: if request.auth != null && request.auth.uid == userId;
     }
     
-    // Projects collection - users can only access documents they own
-    match /projects/{projectId} {
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-      allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
-    }
-    
-    // User settings collection
+    // User settings collection - document ID IS the userId  
     match /userSettings/{userId} {
       allow read, write, delete: if request.auth != null && request.auth.uid == userId;
     }
     
-    // Generic user-owned documents pattern
-    match /{collection}/{docId} {
+    // Projects collection - uses userId field in document
+    match /projects/{projectId} {
+      // Allow reading/listing if user owns the document
       allow read: if request.auth != null && resource.data.userId == request.auth.uid;
-      allow write: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      // Allow creating if the userId field matches auth
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      // Allow update/delete if user owns the document
+      allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
   }
 }
