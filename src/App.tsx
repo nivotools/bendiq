@@ -40,7 +40,7 @@ import {
   Cookie,
 } from "lucide-react";
 import { ConsentBanner, PreferencesModal } from "@/components/CookieConsent";
-import { trackEvent } from "@/components/CookieConsent/GoogleAnalytics";
+import { useTrackEvent } from "@/components/CookieConsent/GoogleAnalytics";
 import { useCookieConsent } from "@/contexts/CookieConsentContext";
 import BenderIQView from "@/components/BenderIQ/BenderIQView";
 import DictionaryView from "@/components/BenderIQ/DictionaryView";
@@ -1051,12 +1051,13 @@ export default function App() {
   }, [showMotivation, activeTab]);
 
   // Track tab changes as virtual page views
+  const trackEvent = useTrackEvent();
   useEffect(() => {
     trackEvent('page_view', {
       page_path: `/${activeTab}`,
       page_title: `BendIQ - ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`,
     });
-  }, [activeTab]);
+  }, [activeTab, trackEvent]);
   const [renamingProject, setRenamingProject] = useState<number | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const streamRef = useRef(null);
