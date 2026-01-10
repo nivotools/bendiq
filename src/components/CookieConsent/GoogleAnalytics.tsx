@@ -21,37 +21,54 @@ const GoogleAnalytics: React.FC = () => {
   const isAnalyticsAllowed = useTrackingAllowed('analytics');
 
   useEffect(() => {
+    // Don't load if consent not given
     if (!isAnalyticsAllowed) {
+      console.log('[Analytics] Consent not given, skipping GA initialization');
+      return;
+    }
+
+    // Validate measurement ID exists
+    if (!GA_MEASUREMENT_ID) {
+      console.error('[Analytics] Missing GA Measurement ID - check VITE_GA_MEASUREMENT_ID env variable');
       return;
     }
 
     // Check if already loaded
-    if (window.gtag) {
+    if (window.gtag && document.querySelector(`script[src*="googletagmanager.com/gtag/js"]`)) {
+      console.log('[Analytics] GA already initialized');
       return;
     }
 
-    // Load Google Analytics script
-    const script = document.createElement('script');
-    script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
-    script.async = true;
-    document.head.appendChild(script);
+    console.log('[Analytics] Initializing GA with ID:', GA_MEASUREMENT_ID.substring(0, 5) + '...');
 
-    // Initialize gtag
+    // Initialize dataLayer first (this is safe to do before script loads)
     window.dataLayer = window.dataLayer || [];
     window.gtag = function gtag(...args: unknown[]) {
       window.dataLayer.push(args);
     };
     window.gtag('js', new Date());
-    window.gtag('config', GA_MEASUREMENT_ID, {
-      anonymize_ip: true, // GDPR compliance
-      cookie_flags: 'SameSite=None;Secure',
-    });
 
-    console.log('[Analytics] Google Analytics initialized with consent');
+    // Load Google Analytics script
+    const script = document.createElement('script');
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
+    script.async = true;
+    
+    // Wait for script to load before configuring
+    script.onload = () => {
+      window.gtag('config', GA_MEASUREMENT_ID, {
+        anonymize_ip: true,
+        cookie_flags: 'SameSite=None;Secure',
+      });
+      console.log('[Analytics] Google Analytics initialized successfully');
+    };
+    
+    script.onerror = () => {
+      console.error('[Analytics] Failed to load Google Analytics script');
+    };
+    
+    document.head.appendChild(script);
 
     return () => {
-      // Cleanup is not strictly necessary as GA is typically loaded once
-      // but we log for debugging purposes
       console.log('[Analytics] Analytics component unmounted');
     };
   }, [isAnalyticsAllowed]);
