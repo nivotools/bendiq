@@ -7,6 +7,7 @@ import Login from "./pages/Login.tsx";
 import PrivacyPolicy from "./pages/PrivacyPolicy.tsx";
 import CookiePolicy from "./pages/CookiePolicy.tsx";
 import GoogleAnalytics from "./components/CookieConsent/GoogleAnalytics";
+import PageViewTracker from "./components/CookieConsent/PageViewTracker";
 import "./index.css";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -61,6 +62,7 @@ createRoot(document.getElementById("root")!).render(
   <BrowserRouter>
     <CookieConsentProvider>
       <GoogleAnalytics />
+      <PageViewTracker />
       <AuthProvider>
         <AppRoutes />
       </AuthProvider>

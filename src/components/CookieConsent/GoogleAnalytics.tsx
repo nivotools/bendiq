@@ -79,27 +79,35 @@ const GoogleAnalytics: React.FC = () => {
       return;
     }
 
-    // Check if already loaded
-    if (window.gtag && document.querySelector(`script[src*="googletagmanager.com/gtag/js"]`)) {
-      console.log('[Analytics] GA already initialized');
-      return;
-    }
-
     console.log('[Analytics] Initializing GA with ID:', GA_MEASUREMENT_ID.substring(0, 5) + '...');
 
-    // Initialize dataLayer first (this is safe to do before script loads)
+    // Always set up dataLayer and gtag function first
     window.dataLayer = window.dataLayer || [];
     window.gtag = function gtag(...args: unknown[]) {
       window.dataLayer.push(args);
     };
+
+    const existingScript = document.querySelector(`script[src*="googletagmanager.com/gtag/js"]`);
+    
+    if (existingScript) {
+      // Script already loaded, just re-configure (handles consent granted after page load)
+      console.log('[Analytics] Script exists, re-configuring...');
+      window.gtag('js', new Date());
+      window.gtag('config', GA_MEASUREMENT_ID, {
+        anonymize_ip: true,
+        cookie_flags: 'SameSite=None;Secure',
+      });
+      console.log('[Analytics] Google Analytics re-configured successfully');
+      return;
+    }
+
+    // Load Google Analytics script for the first time
     window.gtag('js', new Date());
 
-    // Load Google Analytics script
     const script = document.createElement('script');
     script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
     script.async = true;
     
-    // Wait for script to load before configuring
     script.onload = () => {
       window.gtag('config', GA_MEASUREMENT_ID, {
         anonymize_ip: true,
