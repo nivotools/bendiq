@@ -5,6 +5,8 @@ import { CookieConsentProvider } from "./contexts/CookieConsentContext";
 import App from "./App.tsx";
 import Login from "./pages/Login.tsx";
 import PrivacyPolicy from "./pages/PrivacyPolicy.tsx";
+import CookiePolicy from "./pages/CookiePolicy.tsx";
+import GoogleAnalytics from "./components/CookieConsent/GoogleAnalytics";
 import "./index.css";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -48,6 +50,7 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+      <Route path="/cookie-policy" element={<CookiePolicy />} />
       <Route path="/" element={<ProtectedRoute><App /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
@@ -57,6 +60,7 @@ const AppRoutes = () => {
 createRoot(document.getElementById("root")!).render(
   <BrowserRouter>
     <CookieConsentProvider>
+      <GoogleAnalytics />
       <AuthProvider>
         <AppRoutes />
       </AuthProvider>

@@ -87,7 +87,7 @@ const PreferencesModal: React.FC = () => {
 
   return (
     <Dialog open={showPreferencesModal} onOpenChange={(open) => !open && closePreferencesModal()}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-700 text-white">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-700 text-white rounded-xl">
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-500/20 rounded-lg">
@@ -188,20 +188,20 @@ const PreferencesModal: React.FC = () => {
           <Button
             variant="outline"
             onClick={rejectAll}
-            className="flex-1 h-10 border-slate-600 text-slate-200 hover:bg-slate-800 hover:text-white"
+            className="flex-1 h-10 rounded-lg border-slate-600 text-slate-200 hover:bg-slate-800 hover:text-white"
           >
             Reject All
           </Button>
           <Button
             variant="outline"
             onClick={handleSavePreferences}
-            className="flex-1 h-10 border-blue-500/50 text-blue-400 hover:bg-blue-500/10"
+            className="flex-1 h-10 rounded-lg border-blue-500/50 text-blue-400 hover:bg-blue-500/10"
           >
             Save Preferences
           </Button>
           <Button
             onClick={acceptAll}
-            className="flex-1 h-10 bg-blue-600 hover:bg-blue-700 text-white"
+            className="flex-1 h-10 rounded-lg bg-blue-600 hover:bg-blue-700 text-white"
           >
             Accept All
           </Button>

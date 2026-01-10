@@ -25,6 +25,16 @@ const ConsentBanner: React.FC = () => {
               <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
                 We use cookies to enhance your browsing experience, serve personalized content, and analyze our traffic. 
                 You can choose which cookies you allow. Essential cookies are always active as they are necessary for the website to function.
+                Read our{' '}
+                <a 
+                  href="https://bend-iq.com/privacy-policy" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300 underline"
+                >
+                  Privacy Policy
+                </a>{' '}
+                to learn more.
               </p>
             </div>
           </div>
@@ -34,21 +44,21 @@ const ConsentBanner: React.FC = () => {
             <Button
               variant="outline"
               onClick={rejectAll}
-              className="h-10 px-5 text-sm font-medium border-slate-500 text-slate-200 hover:bg-slate-800 hover:text-white min-w-[120px]"
+              className="h-10 px-5 text-sm font-medium rounded-lg border-slate-500 text-slate-200 hover:bg-slate-800 hover:text-white min-w-[120px]"
             >
               Reject All
             </Button>
             <Button
               variant="ghost"
               onClick={openPreferencesModal}
-              className="h-10 px-5 text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white"
+              className="h-10 px-5 text-sm font-medium rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white"
             >
               <Settings className="w-4 h-4 mr-2" />
               Customize
             </Button>
             <Button
               onClick={acceptAll}
-              className="h-10 px-5 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white min-w-[120px]"
+              className="h-10 px-5 text-sm font-medium rounded-lg bg-blue-600 hover:bg-blue-700 text-white min-w-[120px]"
             >
               Accept All
             </Button>
@@ -57,20 +67,22 @@ const ConsentBanner: React.FC = () => {
 
         {/* Legal links */}
         <div className="flex items-center gap-4 mt-3 pt-3 border-t border-slate-700/50">
-          <button 
-            onClick={openPreferencesModal}
+          <Link 
+            to="/cookie-policy"
             className="text-xs text-slate-400 hover:text-blue-400 transition-colors flex items-center gap-1"
           >
             <Cookie className="w-3 h-3" />
             Cookie Policy
-          </button>
+          </Link>
           <span className="text-slate-600">|</span>
-          <Link 
-            to="/privacy-policy" 
+          <a 
+            href="https://bend-iq.com/privacy-policy" 
+            target="_blank" 
+            rel="noopener noreferrer"
             className="text-xs text-slate-400 hover:text-blue-400 transition-colors"
           >
             Privacy Policy
-          </Link>
+          </a>
         </div>
       </div>
     </div>
