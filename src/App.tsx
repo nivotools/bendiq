@@ -3025,6 +3025,12 @@ export default function App() {
           >
             Imprint
           </button>
+          <button
+            onClick={openCookiePreferences}
+            className={`text-[10px] font-bold ${themeConfig.sub} hover:${themeConfig.text} transition-colors`}
+          >
+            Cookie Consent
+          </button>
           <Link
             to="/privacy-policy"
             className={`text-[10px] font-bold ${themeConfig.sub} hover:${themeConfig.text} transition-colors`}
@@ -3174,15 +3180,6 @@ export default function App() {
       <ConsentBanner />
       <PreferencesModal />
 
-      {/* Floating Cookie Preferences Button (GDPR withdrawal requirement) */}
-      <button
-        onClick={openCookiePreferences}
-        className="fixed bottom-6 left-6 z-40 p-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-full shadow-lg transition-all hover:scale-110 group"
-        aria-label="Cookie preferences"
-        title="Manage cookie preferences"
-      >
-        <Cookie className="w-5 h-5 text-slate-300 group-hover:text-blue-400 transition-colors" />
-      </button>
     </div>
   );
 }

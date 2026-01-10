@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCookieConsent } from "@/contexts/CookieConsentContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,6 +37,7 @@ const Login = () => {
   const [formVisible, setFormVisible] = useState(false);
 
   const { signIn, signUp, signInWithGoogle, resetPassword } = useAuth();
+  const { openPreferencesModal } = useCookieConsent();
   const navigate = useNavigate();
 
   // Trigger fade-in animation on mount
@@ -332,6 +334,12 @@ const Login = () => {
             className="text-slate-500 text-xs hover:text-slate-300 transition-colors font-sans"
           >
             Imprint
+          </button>
+          <button
+            onClick={openPreferencesModal}
+            className="text-slate-500 text-xs hover:text-slate-300 transition-colors font-sans"
+          >
+            Cookie Consent
           </button>
           <Link
             to="/privacy-policy"

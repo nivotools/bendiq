@@ -178,7 +178,7 @@ const PreferencesModal: React.FC = () => {
           <div className="flex items-start gap-2 p-3 rounded-lg bg-slate-800/30 border border-slate-700/30">
             <Info className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
             <p className="text-xs text-slate-400">
-              You can change your preferences at any time by clicking the cookie icon in the bottom-left corner. 
+              You can change your preferences at any time by clicking "Cookie Consent" in the footer. 
               Your preferences are stored locally and are not shared with anyone.
             </p>
           </div>
