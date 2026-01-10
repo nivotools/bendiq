@@ -330,16 +330,16 @@ const Login = () => {
         {/* Footer Links */}
         <div className="flex justify-center gap-6 mt-6">
           <button
+            onClick={() => openPreferencesModal()}
+            className="text-slate-500 text-xs hover:text-slate-300 transition-colors font-sans"
+          >
+            Cookie Consent
+          </button>
+          <button
             onClick={() => setShowImprint(true)}
             className="text-slate-500 text-xs hover:text-slate-300 transition-colors font-sans"
           >
             Imprint
-          </button>
-          <button
-            onClick={openPreferencesModal}
-            className="text-slate-500 text-xs hover:text-slate-300 transition-colors font-sans"
-          >
-            Cookie Consent
           </button>
           <Link
             to="/privacy-policy"
