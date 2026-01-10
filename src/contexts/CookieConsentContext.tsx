@@ -9,6 +9,7 @@ export interface CookiePreferences {
 interface CookieConsentContextType {
   preferences: CookiePreferences;
   hasConsented: boolean; // True if user has made any choice
+  isLoading: boolean; // True while loading consent from storage
   showBanner: boolean;
   showPreferencesModal: boolean;
   acceptAll: () => void;
@@ -100,10 +101,11 @@ export const getConsentAnalytics = () => {
 export const CookieConsentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [preferences, setPreferences] = useState<CookiePreferences>(defaultPreferences);
   const [hasConsented, setHasConsented] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Start true - block tracking until loaded
   const [showBanner, setShowBanner] = useState(false);
   const [showPreferencesModal, setShowPreferencesModal] = useState(false);
 
-  // Load stored consent on mount
+  // Load stored consent on mount - CRITICAL: isLoading blocks all tracking until complete
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
@@ -124,6 +126,9 @@ export const CookieConsentProvider: React.FC<{ children: React.ReactNode }> = ({
       // If parsing fails, reset to defaults and show banner
       setShowBanner(true);
       setHasConsented(false);
+    } finally {
+      // Mark loading complete - now tracking decisions can be made
+      setIsLoading(false);
     }
   }, []);
 
@@ -197,6 +202,7 @@ export const CookieConsentProvider: React.FC<{ children: React.ReactNode }> = ({
       value={{
         preferences,
         hasConsented,
+        isLoading,
         showBanner,
         showPreferencesModal,
         acceptAll,
