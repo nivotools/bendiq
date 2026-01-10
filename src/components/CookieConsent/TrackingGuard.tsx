@@ -32,7 +32,13 @@ interface TrackingGuardProps {
  * until explicit consent is given.
  */
 const TrackingGuard: React.FC<TrackingGuardProps> = ({ type, children, fallback = null }) => {
-  const { preferences, hasConsented } = useCookieConsent();
+  const { preferences, hasConsented, isLoading } = useCookieConsent();
+
+  // STRICT MODE: Block ALL tracking while loading consent state
+  // This prevents any tracking code from executing before we know consent status
+  if (isLoading) {
+    return <>{fallback}</>;
+  }
 
   // Only render if:
   // 1. User has made a consent choice
@@ -48,6 +54,9 @@ const TrackingGuard: React.FC<TrackingGuardProps> = ({ type, children, fallback 
  * Hook to check if a specific tracking type is allowed.
  * Useful for conditionally executing tracking code.
  * 
+ * CRITICAL: Returns false while isLoading is true to prevent any tracking
+ * before consent state is fully determined from storage.
+ * 
  * Usage:
  * ```tsx
  * const isAnalyticsAllowed = useTrackingAllowed('analytics');
@@ -61,7 +70,9 @@ const TrackingGuard: React.FC<TrackingGuardProps> = ({ type, children, fallback 
  * ```
  */
 export const useTrackingAllowed = (type: 'analytics' | 'marketing'): boolean => {
-  const { preferences, hasConsented } = useCookieConsent();
+  const { preferences, hasConsented, isLoading } = useCookieConsent();
+  // STRICT MODE: Block ALL tracking while loading or if no consent given
+  if (isLoading) return false;
   return hasConsented && preferences[type];
 };
 
