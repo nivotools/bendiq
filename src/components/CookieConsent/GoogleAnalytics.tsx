@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useTrackingAllowed } from './TrackingGuard';
 
 // Google Analytics Measurement ID
@@ -98,6 +98,8 @@ const GoogleAnalytics: React.FC = () => {
         cookie_flags: 'SameSite=None;Secure',
       });
       console.log('[Analytics] Google Analytics re-configured successfully');
+      // Dispatch event to notify other components that GA is ready
+      window.dispatchEvent(new Event('ga-ready'));
       return;
     }
 
@@ -114,6 +116,8 @@ const GoogleAnalytics: React.FC = () => {
         cookie_flags: 'SameSite=None;Secure',
       });
       console.log('[Analytics] Google Analytics initialized successfully');
+      // Dispatch event to notify other components that GA is ready
+      window.dispatchEvent(new Event('ga-ready'));
     };
     
     script.onerror = () => {
@@ -146,13 +150,50 @@ export const usePageView = (path: string, title?: string) => {
 };
 
 /**
- * Function to track custom events
+ * Hook to track custom events with consent awareness
+ */
+export const useTrackEvent = () => {
+  const isAnalyticsAllowed = useTrackingAllowed('analytics');
+  const [isGAReady, setIsGAReady] = useState(!!window.gtag);
+
+  useEffect(() => {
+    const handleGAReady = () => {
+      console.log('[Analytics] GA ready event received');
+      setIsGAReady(true);
+    };
+    window.addEventListener('ga-ready', handleGAReady);
+    
+    // Check if already ready
+    if (window.gtag) {
+      setIsGAReady(true);
+    }
+    
+    return () => window.removeEventListener('ga-ready', handleGAReady);
+  }, []);
+
+  const track = useCallback((eventName: string, eventParams?: Record<string, unknown>) => {
+    if (isAnalyticsAllowed && isGAReady && window.gtag) {
+      window.gtag('event', eventName, eventParams);
+      console.log('[Analytics] Event tracked:', eventName, eventParams);
+    } else {
+      console.log('[Analytics] Event not tracked - consent:', isAnalyticsAllowed, 'ready:', isGAReady);
+    }
+  }, [isAnalyticsAllowed, isGAReady]);
+
+  return track;
+};
+
+/**
+ * Function to track custom events (standalone - use useTrackEvent hook when possible)
  */
 export const trackEvent = (
   eventName: string,
   eventParams?: Record<string, unknown>
 ) => {
-  if (window.gtag) {
+  if (typeof window !== 'undefined' && window.gtag) {
     window.gtag('event', eventName, eventParams);
+    console.log('[Analytics] Event tracked (standalone):', eventName);
+  } else {
+    console.log('[Analytics] Event not tracked - gtag not ready:', eventName);
   }
 };
