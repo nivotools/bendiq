@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useTrackingAllowed } from './TrackingGuard';
 
-// Google Analytics Measurement ID from environment variable
+// Google Analytics Measurement ID
 const GA_MEASUREMENT_ID = 'G-GZ5KPL362N';
 
 declare global {
@@ -12,24 +12,70 @@ declare global {
 }
 
 /**
+ * Delete all Google Analytics cookies
+ */
+const deleteGACookies = () => {
+  const cookies = document.cookie.split(';');
+  const domains = [window.location.hostname, '.' + window.location.hostname];
+  
+  cookies.forEach(cookie => {
+    const name = cookie.split('=')[0].trim();
+    // Match GA cookies: _ga, _ga_*, _gid, _gat, _gat_*
+    if (name.startsWith('_ga') || name.startsWith('_gid') || name.startsWith('_gat')) {
+      domains.forEach(domain => {
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=${domain}`;
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+      });
+      console.log(`[Analytics] Deleted cookie: ${name}`);
+    }
+  });
+};
+
+/**
+ * Remove GA script from DOM
+ */
+const removeGAScript = () => {
+  const script = document.querySelector('script[src*="googletagmanager.com/gtag/js"]');
+  if (script) {
+    script.remove();
+    console.log('[Analytics] Removed GA script from DOM');
+  }
+};
+
+/**
+ * Clear gtag globals to prevent any further tracking
+ */
+const clearGtagGlobals = () => {
+  if (window.gtag) {
+    // @ts-ignore - intentionally clearing
+    window.gtag = undefined;
+    window.dataLayer = [];
+    console.log('[Analytics] Cleared gtag globals');
+  }
+};
+
+/**
  * GoogleAnalytics Component
  * 
  * Loads and initializes Google Analytics only when analytics consent is given.
- * This component should be wrapped in a TrackingGuard or used with useTrackingAllowed.
+ * Properly cleans up when consent is revoked (GDPR compliant).
  */
 const GoogleAnalytics: React.FC = () => {
   const isAnalyticsAllowed = useTrackingAllowed('analytics');
 
   useEffect(() => {
-    // Don't load if consent not given
+    // Handle consent WITHDRAWAL - clean up everything
     if (!isAnalyticsAllowed) {
-      console.log('[Analytics] Consent not given, skipping GA initialization');
+      console.log('[Analytics] Consent not given or revoked, cleaning up...');
+      deleteGACookies();
+      removeGAScript();
+      clearGtagGlobals();
       return;
     }
 
     // Validate measurement ID exists
     if (!GA_MEASUREMENT_ID) {
-      console.error('[Analytics] Missing GA Measurement ID - check VITE_GA_MEASUREMENT_ID env variable');
+      console.error('[Analytics] Missing GA Measurement ID');
       return;
     }
 
@@ -68,9 +114,6 @@ const GoogleAnalytics: React.FC = () => {
     
     document.head.appendChild(script);
 
-    return () => {
-      console.log('[Analytics] Analytics component unmounted');
-    };
   }, [isAnalyticsAllowed]);
 
   return null;
