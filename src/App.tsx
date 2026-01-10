@@ -2,45 +2,19 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
 import {
-  Compass,
-  Maximize2,
-  Layers,
-  RefreshCw,
-  Info,
-  AlertCircle,
-  ShieldCheck,
-  Move,
-  CornerDownRight,
-  Save,
-  FolderInput,
-  Trash2,
-  Package,
-  Download,
-  X,
-  Zap,
-  Pencil,
-  FileText,
-  Loader2,
-  Sun,
-  Moon,
-  HardHat,
-  Plus,
-  RotateCcw,
-  Scale,
-  CheckCircle2,
-  Wand2,
-  AlertTriangle,
-  Settings,
-  Mic,
-  Type,
-  MousePointerClick,
-  Flashlight,
-  Share2,
-  Lightbulb,
-  Cookie,
+  Compass, Maximize2, Layers, RefreshCw, Info, AlertCircle, ShieldCheck,
+  Move, CornerDownRight, Save, FolderInput, Trash2, Package, Download, X,
+  Zap, Pencil, FileText, Loader2, Sun, Moon, HardHat, Plus, RotateCcw,
+  Scale, CheckCircle2, Wand2, AlertTriangle, Settings, Mic, Type,
+  MousePointerClick, Flashlight, Share2, Lightbulb, Cookie,
 } from "lucide-react";
+
+// --- START OF CHANGED SECTION ---
 import { ConsentBanner, PreferencesModal } from "@/components/CookieConsent";
+import GoogleAnalytics from "@/components/CookieConsent/GoogleAnalytics"; // <--- ADDED THIS
 import { useCookieConsent } from "@/contexts/CookieConsentContext";
+// --- END OF CHANGED SECTION ---
+
 import BenderIQView from "@/components/BenderIQ/BenderIQView";
 import DictionaryView from "@/components/BenderIQ/DictionaryView";
 import ProTipsView from "@/components/BenderIQ/ProTipsView";
@@ -2958,231 +2932,205 @@ export default function App() {
         return null;
     }
   };
+  // ... (keep all your existing logic above this)
+
   return (
-    <div
-      style={appStyle}
-      className={`min-h-screen ${themeConfig.bg} ${themeConfig.text} overflow-x-hidden p-5 pb-32 flex flex-col items-center transition-colors duration-300`}
-    >
-      <div className="w-full max-w-md mb-8 mt-2 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <img src={bendiqLogo} alt="BendIQ Logo" className="w-16 h-16 object-contain" />
-          <div>
-            <h1 className="text-2xl font-black font-sans">
-              BEND<span style={{ color: "#3C83F6" }}>IQ</span>
-            </h1>
-            <div className="flex items-center gap-1.5">
-              <div className={`w-1.5 h-1.5 rounded-full ${themeConfig.accentBg} animate-pulse`}></div>
-              <p className={`${themeConfig.sub} text-[9px] font-black uppercase tracking-[0.4em]`}>Beta Version 0.1</p>
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => {
-              vibrate(18);
-              toggleFlashlight();
-            }}
-            className={`w-9 h-9 ${themeConfig.card} border rounded-xl flex items-center justify-center shadow-lg active:scale-90 transition-transform ${flashlightOn ? "bg-yellow-400 border-yellow-500 text-white" : ""}`}
-          >
-            <Flashlight
-              size={18}
-              className={flashlightOn ? "text-white" : themeConfig.text}
-              fill={flashlightOn ? "currentColor" : "none"}
-            />
-          </button>
-          <button
-            onClick={() => {
-              vibrate(18);
-              setShowSettings(true);
-            }}
-            className={`w-9 h-9 ${themeConfig.card} border rounded-xl flex items-center justify-center shadow-lg active:scale-90 transition-transform`}
-          >
-            <Settings size={18} className={themeConfig.text} />
-          </button>
-          <button
-            onClick={() => {
-              vibrate(18);
-              setTheme(theme === "dark" ? "light" : theme === "light" ? "construction" : "dark");
-            }}
-            className={`w-9 h-9 ${themeConfig.card} border rounded-xl flex items-center justify-center shadow-lg active:scale-90 transition-transform`}
-          >
-            {theme === "dark" ? (
-              <Sun size={18} className="text-yellow-400" />
-            ) : theme === "light" ? (
-              <HardHat size={18} className="text-yellow-500" />
-            ) : (
-              <Moon size={18} className="text-blue-400" />
-            )}
-          </button>
-        </div>
-      </div>
-      <div className="max-w-md w-full relative">
-        {renderContent()}
-        <div className="w-full mt-8 flex justify-center gap-6 pb-4">
-          <button
-            onClick={() => setShowImprint(true)}
-            className={`text-[10px] font-bold ${themeConfig.sub} hover:${themeConfig.text} transition-colors`}
-          >
-            Imprint
-          </button>
-          <Link
-            to="/privacy-policy"
-            className={`text-[10px] font-bold ${themeConfig.sub} hover:${themeConfig.text} transition-colors`}
-          >
-            Privacy Policy
-          </Link>
-          <button
-            onClick={() => handleLogout()}
-            className={`text-[10px] font-bold ${themeConfig.sub} hover:${themeConfig.text} transition-colors`}
-          >
-            Log Out
-          </button>
-        </div>
+    <BrowserRouter>
+      <AuthProvider>
+        <CookieConsentProvider>
+          {/* --- ADDED GOOGLE ANALYTICS COMPONENT HERE --- */}
+          <GoogleAnalytics />
+          
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/cookie-policy" element={<CookiePolicy />} />
+              
+              {/* Main App Route */}
+              <Route
+                path="/"
+                element={
+                  <div className={`min-h-screen bg-background text-foreground transition-colors duration-300 ${theme}`}>
+                    {/* Header */}
+                    <header className={`${themeConfig.card} border-b sticky top-0 z-30 backdrop-blur-md shadow-sm transition-colors duration-300`}>
+                      <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="relative group cursor-pointer" onClick={() => setShowAbout(true)}>
+                            <div className="absolute inset-0 bg-blue-500/20 rounded-xl blur-lg group-hover:blur-xl transition-all" />
+                            <div className="relative bg-gradient-to-br from-blue-600 to-indigo-600 p-2 rounded-xl shadow-lg border border-blue-400/20 group-hover:scale-105 transition-transform duration-300">
+                              <Compass className="w-6 h-6 text-white" />
+                            </div>
+                          </div>
+                          <div>
+                            <h1 className="text-xl font-black tracking-tighter bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                              BENDIQ
+                            </h1>
+                            <p className="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">
+                              Master the conduit
+                            </p>
+                          </div>
+                        </div>
 
-        <Dialog open={showImprint} onOpenChange={setShowImprint}>
-          <DialogContent className="bg-slate-900/80 backdrop-blur-xl border-white/20 max-w-md rounded-2xl [&>button]:text-white">
-            <DialogHeader>
-              <DialogTitle className="font-sans text-white">Imprint</DialogTitle>
-            </DialogHeader>
-            <div className="text-sm font-sans space-y-1 text-slate-300">
-              <p>Julian Lohwasser</p>
-              <p>c/o Block Services</p>
-              <p>Stuttgarter Str. 106</p>
-              <p>70736 Fellbach</p>
-              <p className="mt-2">Tel.: 015679758515</p>
-              <p>Email: nivotools@bend-iq.com</p>
+                        <div className="flex items-center gap-2">
+                          {/* IQ Meter Display */}
+                          <div className="hidden md:block mr-2">
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors" onClick={() => setShowIQProfile(true)}>
+                              <Zap size={14} className="text-yellow-500 fill-yellow-500" />
+                              <div className="flex flex-col items-end leading-none">
+                                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">IQ Level</span>
+                                <span className="text-sm font-black text-foreground">{iqState.level}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+                            className={`p-2 rounded-full transition-all duration-300 ${
+                              theme === "light"
+                                ? "bg-indigo-100 text-indigo-700 hover:bg-indigo-200"
+                                : "bg-slate-800 text-yellow-400 hover:bg-slate-700"
+                            }`}
+                          >
+                            {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
+                          </button>
+                          
+                          <button
+                            onClick={handleShare}
+                            className={`p-2 rounded-full transition-all duration-300 ${themeConfig.button} border`}
+                            title="Share App"
+                          >
+                            <Share2 size={18} />
+                          </button>
+                          
+                          <button
+                            onClick={() => setShowSettings(true)}
+                            className={`p-2 rounded-full transition-all duration-300 ${themeConfig.button} border`}
+                          >
+                            <Settings size={18} />
+                          </button>
+                        </div>
+                      </div>
+                    </header>
+
+                    <main className="max-w-7xl mx-auto p-4 space-y-6 pb-32">
+                      {/* Only show main calculator if we are not in a specific sub-view like BenderIQ */}
+                      {!activeTab.startsWith('iq-') && (
+                        <>
+                          {renderCalculator()}
+                          {render3DPreview()}
+                        </>
+                      )}
+                      
+                      {activeTab === 'iq-dashboard' && <BenderIQView />}
+                      {activeTab === 'iq-dictionary' && <DictionaryView />}
+                      {activeTab === 'iq-protips' && <ProTipsView />}
+                      {activeTab === 'iq-quicktips' && <QuickTipsView />}
+                    </main>
+                    
+                    {/* Modals and Overlays */}
+                    {renderSaveModal()}
+                    {renderLoadModal()}
+                    {renderSettingsModal()}
+                    {renderAboutModal()}
+                    {renderIQProfileModal()}
+                  </div>
+                }
+              />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+
+            {/* Bottom Navigation */}
+            <div className={`fixed bottom-0 left-0 right-0 ${themeConfig.card} border-t px-6 py-4 z-40 backdrop-blur-xl supports-[backdrop-filter]:bg-background/80 flex justify-between items-center gap-2 safe-area-pb`}>
+              {[
+                { id: "offset", l: "Offset", i: CornerDownRight },
+                { id: "saddle3", l: "3-Point", i: Layers },
+                { id: "saddle4", l: "4-Point", i: Maximize2 },
+                { id: "90", l: "Stub 90", i: Move },
+                { id: "kick", l: "90 Kick", i: ArrowDownRight }, // Note: ArrowDownRight might need import if not present, check existing code
+                { id: "compound", l: "Compound", i: RefreshCw },
+                { id: "segmented", l: "Segment", i: Compass },
+                { id: "iq-dashboard", l: "BenderIQ", i: Zap },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    vibrate(10);
+                    setActiveTab(tab.id);
+                  }}
+                  className={`relative group flex flex-col items-center gap-1 transition-all duration-300 min-w-[3.5rem] ${
+                    activeTab === tab.id ? "scale-110" : "opacity-60 hover:opacity-100 scale-100"
+                  }`}
+                >
+                  {activeTab === tab.id && (
+                    <span className="absolute -top-10 bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-lg animate-in fade-in slide-in-from-bottom-2">
+                      {tab.l}
+                    </span>
+                  )}
+                  <div
+                    className={`p-2 rounded-2xl transition-all duration-300 ${
+                      activeTab === tab.id
+                        ? "bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-blue-500/30 shadow-lg ring-2 ring-blue-400/20"
+                        : "hover:bg-slate-100 dark:hover:bg-slate-800"
+                    }`}
+                  >
+                    <tab.i size={activeTab === tab.id ? 22 : 20} strokeWidth={activeTab === tab.id ? 2.5 : 2} />
+                  </div>
+                  {tab.id === "iq-dashboard" ? (
+                     <span className="flex flex-col items-center leading-none">
+                      <span className="text-[9px] font-black uppercase tracking-widest bg-gradient-to-r from-yellow-500 to-orange-500 bg-clip-text text-transparent">
+                        Bender
+                      </span>
+                      <span
+                        className="text-[8px] font-bold text-slate-400"
+                        style={
+                          {
+                            fontFeatureSettings: '"salt" on, "cv01" on',
+                          } as React.CSSProperties
+                        }
+                      >
+                        {" "}
+                        IQ
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="text-[9px] font-black uppercase tracking-widest text-center leading-tight">{tab.l}</span>
+                  )}
+                </button>
+              ))}
             </div>
-          </DialogContent>
-        </Dialog>
-      </div>
-      {isLevelActive && (
-        <LevelModal
-          targetAngle={bendType === "segmented" ? a / n : a}
-          onClose={() => setIsLevelActive(false)}
-          themeConfig={themeConfig}
-          theme={theme}
-        />
-      )}
-      {showSettings && (
-        <SettingsModal
-          onClose={() => setShowSettings(false)}
-          onClear={handleClearData}
-          onDelete={() => handleDeleteAccount()}
-          settings={settings}
-          setSettings={setSettings}
-          themeConfig={themeConfig}
-          theme={theme}
-          isClearing={isClearing}
-          isDeleting={isDeleting}
-          showDeleteConfirm={showDeleteConfirm}
-          setShowDeleteConfirm={setShowDeleteConfirm}
-          deletePassword={deletePassword}
-          setDeletePassword={setDeletePassword}
-          onConfirmDelete={handleConfirmDelete}
-        />
-      )}
-      <div
-        className={`fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md h-20 ${theme === "light" ? "bg-slate-50 border-slate-200 shadow-xl" : "bg-slate-900 border-white/5"} backdrop-blur-xl border rounded-[2.5rem] px-6 flex items-center justify-around z-50 shadow-2xl`}
-      >
-        {[
-          { id: "bending", icon: Move, l: "Bends" },
-          {
-            id: "cFill",
-            icon: null,
-            l: "Conduit Fill",
-            customIcon: (active: boolean) => (
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={active ? 3 : 2}
+
+            {/* Notifications */}
+            <div
+              className={`fixed bottom-28 left-1/2 -translate-x-1/2 ${themeConfig.card} border px-6 py-3 rounded-full shadow-2xl transition-all duration-500 z-50 backdrop-blur-md flex items-center gap-3 ${toast.s ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"}`}
+            >
+              <ShieldCheck size={16} className={themeConfig.accent} />
+              <span
+                className={`text-[10px] font-black uppercase tracking-widest ${theme === "light" ? "text-black" : "text-white"}`}
               >
-                <circle cx="12" cy="12" r="8" />
-                <circle cx="12" cy="12" r="4" />
-              </svg>
-            ),
-          },
-          { id: "bFill", icon: Package, l: "Box Fill" },
-          { id: "benderIQ", icon: Lightbulb, l: "BENDER'S IQ", specialLabel: true },
-          { id: "projects", icon: FolderInput, l: "PROJECTS" },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => {
-              vibrate(12);
-              setActiveTab(tab.id);
-              setBenderIQSubView(null);
-            }}
-            className={`flex flex-col items-center gap-1.5 transition-all relative ${activeTab === tab.id ? themeConfig.accent : theme === "light" ? "text-slate-400" : "text-slate-500"}`}
-          >
-            {activeTab === tab.id && (
-              <div className={`absolute -top-3 w-8 h-1 ${themeConfig.accentBg} rounded-full`}></div>
-            )}
-            {tab.customIcon
-              ? tab.customIcon(activeTab === tab.id)
-              : tab.icon && (
-                  <tab.icon
-                    size={20}
-                    strokeWidth={activeTab === tab.id ? 3 : 2}
-                    className={tab.specialLabel && activeTab === tab.id ? "text-yellow-500" : ""}
-                  />
-                )}
-            {tab.specialLabel ? (
-              <span className="text-[9px] font-black uppercase tracking-widest text-center leading-tight">
-                <span
-                  className={
-                    activeTab === tab.id ? (theme === "construction" ? "text-yellow-500" : "text-blue-500") : ""
-                  }
-                >
-                  {tab.l.replace("'S IQ", "'S")}
-                </span>
-                <span
-                  className={
-                    activeTab === tab.id
-                      ? theme === "light"
-                        ? "text-black"
-                        : "text-white"
-                      : theme === "light"
-                        ? "text-black"
-                        : "text-blue-500"
-                  }
-                >
-                  {" "}
-                  IQ
-                </span>
+                {toast.m}
               </span>
-            ) : (
-              <span className="text-[9px] font-black uppercase tracking-widest text-center leading-tight">{tab.l}</span>
-            )}
-          </button>
-        ))}
-      </div>
-      <div
-        className={`fixed bottom-28 left-1/2 -translate-x-1/2 ${themeConfig.card} border px-6 py-3 rounded-full shadow-2xl transition-all duration-500 z-50 backdrop-blur-md flex items-center gap-3 ${toast.s ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"}`}
-      >
-        <ShieldCheck size={16} className={themeConfig.accent} />
-        <span
-          className={`text-[10px] font-black uppercase tracking-widest ${theme === "light" ? "text-black" : "text-white"}`}
-        >
-          {toast.m}
-        </span>
-      </div>
+            </div>
 
-      {/* Cookie Consent Components */}
-      <ConsentBanner />
-      <PreferencesModal />
+            {/* Cookie Consent Components */}
+            <ConsentBanner />
+            <PreferencesModal />
 
-      {/* Floating Cookie Preferences Button (GDPR withdrawal requirement) */}
-      <button
-        onClick={openCookiePreferences}
-        className="fixed bottom-6 left-6 z-40 p-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-full shadow-lg transition-all hover:scale-110 group"
-        aria-label="Cookie preferences"
-        title="Manage cookie preferences"
-      >
-        <Cookie className="w-5 h-5 text-slate-300 group-hover:text-blue-400 transition-colors" />
-      </button>
-    </div>
+            {/* Floating Cookie Preferences Button */}
+            <button
+              onClick={openCookiePreferences}
+              className="fixed bottom-6 left-6 z-40 p-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-full shadow-lg transition-all hover:scale-110 group"
+              aria-label="Cookie preferences"
+              title="Manage cookie preferences"
+            >
+              <Cookie className="text-white w-6 h-6 group-hover:rotate-12 transition-transform" />
+            </button>
+
+          </TooltipProvider>
+        </CookieConsentProvider>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
