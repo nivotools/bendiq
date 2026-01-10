@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import { useTrackingAllowed } from './TrackingGuard';
 
-// Replace with your actual Google Analytics Measurement ID
-const GA_MEASUREMENT_ID = 'G-XXXXXXXXXX';
+// Google Analytics Measurement ID from environment variable
+const GA_MEASUREMENT_ID = import.meta.env.VITE_GA_MEASUREMENT_ID || '';
 
 declare global {
   interface Window {

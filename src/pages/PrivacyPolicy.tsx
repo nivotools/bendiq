@@ -141,7 +141,7 @@ const PrivacyPolicy = () => {
               <p>Germany</p>
               <p className="mt-2">Tel.: 015679758515</p>
               <p>Email: nivotools@bend-iq.com</p>
-              <p>Website: bendiq.lovable.app</p>
+              <p>Website: bend-iq.com</p>
             </div>
 
             <h3 className="font-bold mt-6 text-lg text-blue-400">Cookies</h3>
@@ -359,12 +359,22 @@ const PrivacyPolicy = () => {
             <h3 className="font-bold mt-6 text-lg text-blue-400">Existence of Automated Decision-Making</h3>
             <p>As a responsible company, we do not use automatic decision-making or profiling.</p>
 
-            <h3 className="font-bold mt-6 text-lg text-blue-400">Hosting & Platform (Lovable)</h3>
+            <h3 className="font-bold mt-6 text-lg text-blue-400">Hosting by IONOS</h3>
+            <p>We host our website with the following provider:</p>
+            <div className="bg-slate-800/50 rounded-xl p-4 text-slate-300 my-4">
+              <p>IONOS SE</p>
+              <p>Elgendorfer Str. 57</p>
+              <p>56410 Montabaur</p>
+              <p>Germany</p>
+            </div>
             <p>
-              This website is provided via the Lovable platform (operated by Lovable Labs AG). Lovable provides the
-              information technology infrastructure through which the user accesses the app. As part of this technical
-              process, server log files (IP address, browser type) are collected by Lovable Labs AG for the purpose of
-              ensuring the technical stability and security of the application.
+              <strong className="text-white">Nature and Purpose of Processing:</strong> The hoster processes personal data (e.g., IP addresses, technical usage data) to provide us with infrastructure and platform services, computing capacity, storage space, database services, security services, and technical maintenance services used for the purpose of operating this online offering.
+            </p>
+            <p className="mt-4">
+              <strong className="text-white">Legal Basis:</strong> The use of the hoster is for the purpose of contract fulfillment towards our potential and existing customers (Art. 6 (1) (b) GDPR) and in the interest of a secure, fast, and efficient provision of our online offering by a professional provider (Art. 6 (1) (f) GDPR).
+            </p>
+            <p className="mt-4">
+              <strong className="text-white">Conclusion of a Data Processing Agreement (DPA):</strong> In order to ensure processing in compliance with data protection regulations, we have concluded a Data Processing Agreement with the provider mentioned above.
             </p>
 
             <h3 className="font-bold mt-6 text-lg text-blue-400">Use of Median (App Wrapper)</h3>
