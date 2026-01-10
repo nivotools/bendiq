@@ -6,8 +6,9 @@ const GA_MEASUREMENT_ID = 'G-GZ5KPL362N';
 
 declare global {
   interface Window {
-    gtag: (...args: unknown[]) => void;
-    dataLayer: unknown[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    gtag: (...args: any[]) => void;
+    dataLayer: IArguments[];
   }
 }
 
@@ -83,8 +84,9 @@ const GoogleAnalytics: React.FC = () => {
 
     // Always set up dataLayer and gtag function first
     window.dataLayer = window.dataLayer || [];
-    window.gtag = function gtag(...args: unknown[]) {
-      window.dataLayer.push(args);
+    window.gtag = function gtag() {
+      // eslint-disable-next-line prefer-rest-params
+      window.dataLayer.push(arguments);
     };
 
     const existingScript = document.querySelector(`script[src*="googletagmanager.com/gtag/js"]`);
