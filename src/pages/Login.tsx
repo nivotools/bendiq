@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ScrollArea } from "@/components/ui/scroll-area";
 import bendiqLogo from "@/assets/bendiq-logo.png";
 import PreferencesModal from "@/components/CookieConsent/PreferencesModal";
+import ConsentBanner from "@/components/CookieConsent/ConsentBanner";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z
@@ -413,8 +414,9 @@ const Login = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Cookie Preferences Modal */}
+      {/* Cookie Consent */}
       <PreferencesModal />
+      <ConsentBanner />
     </div>
   );
 };
