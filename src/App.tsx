@@ -3020,16 +3020,16 @@ export default function App() {
         {renderContent()}
         <div className="w-full mt-8 flex justify-center gap-6 pb-4">
           <button
-            onClick={() => setShowImprint(true)}
-            className={`text-[10px] font-bold ${themeConfig.sub} hover:${themeConfig.text} transition-colors`}
-          >
-            Imprint
-          </button>
-          <button
             onClick={openCookiePreferences}
             className={`text-[10px] font-bold ${themeConfig.sub} hover:${themeConfig.text} transition-colors`}
           >
             Cookie Consent
+          </button>
+          <button
+            onClick={() => setShowImprint(true)}
+            className={`text-[10px] font-bold ${themeConfig.sub} hover:${themeConfig.text} transition-colors`}
+          >
+            Imprint
           </button>
           <Link
             to="/privacy-policy"
