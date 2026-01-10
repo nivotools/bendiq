@@ -11,6 +11,7 @@ import { z } from "zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import bendiqLogo from "@/assets/bendiq-logo.png";
+import PreferencesModal from "@/components/CookieConsent/PreferencesModal";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z
@@ -411,6 +412,9 @@ const Login = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Cookie Preferences Modal */}
+      <PreferencesModal />
     </div>
   );
 };
