@@ -44,6 +44,59 @@ interface StoredConsent {
   version: string;
 }
 
+// Consent analytics storage key
+const CONSENT_ANALYTICS_KEY = 'bendiq_consent_analytics';
+
+interface ConsentEvent {
+  type: 'accept_all' | 'reject_all' | 'custom';
+  preferences: CookiePreferences;
+  timestamp: number;
+  userAgent: string;
+}
+
+// Helper to log consent events for compliance reporting
+const logConsentEvent = (type: ConsentEvent['type'], prefs: CookiePreferences) => {
+  try {
+    const events: ConsentEvent[] = JSON.parse(localStorage.getItem(CONSENT_ANALYTICS_KEY) || '[]');
+    const newEvent: ConsentEvent = {
+      type,
+      preferences: prefs,
+      timestamp: Date.now(),
+      userAgent: navigator.userAgent,
+    };
+    // Keep last 100 events for compliance
+    const updatedEvents = [...events.slice(-99), newEvent];
+    localStorage.setItem(CONSENT_ANALYTICS_KEY, JSON.stringify(updatedEvents));
+    console.log(`[Consent] Logged ${type} event for compliance reporting`);
+  } catch (error) {
+    console.error('[Consent] Failed to log consent event:', error);
+  }
+};
+
+// Export function to get consent analytics for reporting
+export const getConsentAnalytics = () => {
+  try {
+    const events: ConsentEvent[] = JSON.parse(localStorage.getItem(CONSENT_ANALYTICS_KEY) || '[]');
+    const total = events.length;
+    const acceptAll = events.filter(e => e.type === 'accept_all').length;
+    const rejectAll = events.filter(e => e.type === 'reject_all').length;
+    const custom = events.filter(e => e.type === 'custom').length;
+    
+    return {
+      total,
+      acceptAll,
+      rejectAll,
+      custom,
+      acceptRate: total > 0 ? ((acceptAll / total) * 100).toFixed(1) : '0',
+      rejectRate: total > 0 ? ((rejectAll / total) * 100).toFixed(1) : '0',
+      customRate: total > 0 ? ((custom / total) * 100).toFixed(1) : '0',
+      events,
+    };
+  } catch {
+    return { total: 0, acceptAll: 0, rejectAll: 0, custom: 0, acceptRate: '0', rejectRate: '0', customRate: '0', events: [] };
+  }
+};
+
 export const CookieConsentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [preferences, setPreferences] = useState<CookiePreferences>(defaultPreferences);
   const [hasConsented, setHasConsented] = useState(false);
@@ -94,6 +147,7 @@ export const CookieConsentProvider: React.FC<{ children: React.ReactNode }> = ({
     setShowBanner(false);
     setShowPreferencesModal(false);
     saveConsent(newPrefs);
+    logConsentEvent('accept_all', newPrefs);
   }, [saveConsent]);
 
   const rejectAll = useCallback(() => {
@@ -107,6 +161,7 @@ export const CookieConsentProvider: React.FC<{ children: React.ReactNode }> = ({
     setShowBanner(false);
     setShowPreferencesModal(false);
     saveConsent(newPrefs);
+    logConsentEvent('reject_all', newPrefs);
   }, [saveConsent]);
 
   const updatePreferences = useCallback((prefs: Partial<Omit<CookiePreferences, 'essential'>>) => {
@@ -117,6 +172,7 @@ export const CookieConsentProvider: React.FC<{ children: React.ReactNode }> = ({
         essential: true, // Always enforce essential
       };
       saveConsent(newPrefs);
+      logConsentEvent('custom', newPrefs);
       return newPrefs;
     });
     setHasConsented(true);
