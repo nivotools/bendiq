@@ -1,15 +1,15 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { initializeApp } from "firebase/app";
+import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDTA1sJ0rurDW90E0f_5epq2EiatjVTtjw",
-  authDomain: "bendiq-62c65.firebaseapp.com",
-  projectId: "bendiq-62c65",
-  storageBucket: "bendiq-62c65.firebasestorage.app",
-  messagingSenderId: "985415651642",
-  appId: "1:985415651642:web:314781bf40cadc25aa8003",
-  measurementId: "G-TYH856479C"
+  apiKey: "AIzaSyD130ywuRLY_d5NGPnQzcs03Se9pM7BwGw",
+  authDomain: "bendiq-f2b42.firebaseapp.com",
+  projectId: "bendiq-f2b42",
+  storageBucket: "bendiq-f2b42.firebasestorage.app",
+  messagingSenderId: "1099283225918",
+  appId: "1:1099283225918:web:a1ee218f60dd1fedac206f",
+  measurementId: "G-5CZ48RBR84",
 };
 
 const app = initializeApp(firebaseConfig);
